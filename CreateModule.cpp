@@ -136,7 +136,7 @@ void CreateDMLResources(const std::wstring& path_to_onnx){
                 
                 auto shapeByteSize = inputShape.size() * sizeof(UINT32);
                 auto prevStride = dmlWeights.size();
-                // TODO: handling weights to upload
+                // TODO: handling extra weights
                 weightsBinding.push_back(BindingInfo(prevStride, shapeByteSize));
                 dmlWeights.resize(prevStride + shapeByteSize);
                 memcpy(dmlWeights.data() + prevStride, inputShape.data(), shapeByteSize);

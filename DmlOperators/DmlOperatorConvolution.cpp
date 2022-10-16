@@ -8,20 +8,12 @@ namespace Dml
 
 class DmlOperatorConvolution //: public DmlOperator, public ConvolutionHelperBase
 {
-private:
-    bool hasBias = true;
-    bool autoPad = false;
-
-    dml::Expression m_input;
-    dml::Expression m_weight;
-    std::optional<dml::Expression> m_bias;
 
 public:
     using Self = DmlOperatorConvolution;
 
     DmlOperatorConvolution(
-        const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph
-        )
+        const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion )
     // :   DmlOperator(kernelInfo),
         // ConvolutionHelperBase(kernelInfo, kernelInfo.GetTensorShapeDescription(), direction == DML_CONVOLUTION_DIRECTION_BACKWARD, hasDynamicPads, 0, 1)
     {
@@ -34,7 +26,7 @@ public:
         m_weight = expressionMap[weightName];
 
         if (node.inputNames.size() == 2){
-            hasBias = false;
+            // hasBias = false;
             bias = std::nullopt;
         }
         else{
@@ -42,11 +34,46 @@ public:
             bias = expressionMap[biasName];
         }
         // attribute
+        std::vector<char> tempAttri;
+        
+        { 
+        //auto_pad must be either NOTSET, SAME_UPPER, SAME_LOWER or VALID.
+            bool hasAutoPad = node.GetAttribute("auto_pad", ONNX_PARSER::AttributeType::STRING, tempAttri);
+            if (hasAutoPad){
+                autoPad.resize(tempAttri.size());
+                memcpy(autoPad.data(), tempAttri.data(), tempAttri.size());
+            }
+            else{
+                autoPad = "NOTSET";
+            }
+        }
+        
+        {
+            bool hasGroup = node.GetAttribute("group", ONNX_PARSER::AttributeType::INT, tempAttri);
+            if (hasGroup){
+                memcpy(&group, tempAttri.data(), tempAttri.size());
+            }
+            else{
+                group = 1;
+            }
+        }
 
+        auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
+            bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS, tempAttri);
+            if (hasAttri){
+                attriVec.resize(tempAttri.size() / 4);
+                memcpy(attriVec.data(), tempAttri.data(), tempAttri.size());
+            }
+            else{
+                assert(false);
+            }
+        }
 
-
-
-
+        getIntsAttriAndCopy("dilations", dialations);
+        getIntsAttriAndCopy("kernel_shape", kernelShape);
+        getIntsAttriAndCopy("pads", paddings);
+        getIntsAttriAndCopy("strides", strides);
+        
         // uint32_t biasIndex = hasDynamicPads ? 3 : 2;
         // bool hasBiasInput = kernelInfo.GetInputCount() > biasIndex;
 
@@ -81,16 +108,27 @@ public:
     dml::Expression Create(){
         return dml::ConvolutionBuilder(m_input, m_weight, m_bias)
                     .Mode()
-                    .Direction()
-                    .Strides()
-                    .Dilations()
-                    .StartPadding(std::array<uint32_t, 2>{ 1u, 1u })
-                    .EndPadding(std::array<uint32_t, 2>{ 1u, 1u })
+                    .Direction(DML_CONVOLUTION_DIRECTION_FORWARD) // TODO: Add reverse direction to support transposedconv
+                    .Strides(strides)
+                    .Dilations(dialations)
+                    .StartPadding()
+                    .EndPadding()
                     .OutputPadding()
-                    .GroupCount()
+                    .GroupCount(group)
                     //.FusedActivation(dml::FusedActivation::Relu())
                     .Build();
     }
+private:
+    // bool hasBias = true;
+    std::string autoPad;
+    std::vector<int> dialations;
+    std::vector<int> kernelShape;
+    std::vector<int> paddings;
+    std::vector<int> strides;
+    int group;
+    dml::Expression m_input;
+    dml::Expression m_weight;
+    std::optional<dml::Expression> m_bias;
 
 };
 

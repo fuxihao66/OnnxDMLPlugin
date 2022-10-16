@@ -88,6 +88,5 @@ private:
 
 // DML_OP_DEFINE_CREATION_FUNCTION(ConstantOfShape, DmlOperatorConstantOfShape);
 DML_OP_DEFINE_CREATION_FUNCTION(Constant, DmlOperatorConstant);
-DML_OP_DEFINE_CREATION_FUNCTION(Shape, DmlOperatorShape);
 
 } // namespace Dml

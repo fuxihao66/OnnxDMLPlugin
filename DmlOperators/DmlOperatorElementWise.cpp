@@ -98,7 +98,7 @@ class DmlOperatorElementwiseBinary
 {
 public:
     DmlOperatorElementwiseBinary(const std::map<std::string, dml::Expression>& expressionMap, 
-                                 const Op& node, dml::Graph& graph)
+                                 const Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 2)
             throw std::exception("Binary operator must have 2 parameters!")

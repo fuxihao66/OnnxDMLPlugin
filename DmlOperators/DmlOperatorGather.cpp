@@ -10,7 +10,7 @@ class DmlOperatorGather
 {
 public:
     DmlOperatorGather(const std::map<std::string, dml::Expression>& expressionMap, 
-                      const Op& node, dml::Graph& graph)
+                      const Op& node, dml::Graph& graph, unsigned int opsetVersion)
     
     {
         if (node.inputNames.size() != 2)
@@ -19,13 +19,26 @@ public:
         m_input = expressionMap[node.inputsNames[0]];
         m_indices = expressionMap[node.inputsNames[1]];
 
-        int tempAxis = ;
+        Dimensions inputShape = m_inputs.GetOutputDesc().sizes;
+        Dimensions indicesShape = m_indices.GetOutputDesc().sizes;
+        
+
+        int tempaxis;
+        {
+            std:vector<char> temp;
+            bool hasAxis = node.GetAttribute("axis", ONNX_PARSER::AttributeType::INT, temp);
+            if (hasAxis){
+                memcpy(&tempaxis, temp.data(), temp.size());
+            }
+            else
+                tempaxis = 0;
+        }
         if (tempAxis < 0)
-            axis = node.inputInfo[0].dims + tempAxis;
+            axis = inputShape.size() + tempAxis;
         else
             axis = tempAxis;
 
-        indexDimensions = ; // TODO: ???
+        indexDimensions = indicesShape.size(); // TODO: need unit test
     }
     dml::Expression Create(){
         return dml::Gather(m_input, m_indices, axis, indexDimensions);

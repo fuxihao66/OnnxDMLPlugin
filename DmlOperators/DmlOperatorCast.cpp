@@ -21,7 +21,7 @@ public:
 
         auto& inputName = node.inputNames[0];
         m_input = expressionMap[inputName];
-        targetDataType = OnnxTensorType2DmlTensorType(node.outputInfo.tensorType);
+        targetDataType = TensorType2DmlTensorType(node.outputInfo.tensorType);
     }
 
     dml::Expression Create(){

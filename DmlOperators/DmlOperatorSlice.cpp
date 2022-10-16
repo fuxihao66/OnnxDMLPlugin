@@ -13,7 +13,7 @@ public:
     // :   DmlOperator(kernelInfo),
     //     SliceHelper(kernelInfo, kernelInfo.GetTensorShapeDescription(), opsetVersion)
     {
-        const uint32_t inputCount = node.inputInfo.size();
+        const uint32_t inputCount = node.inputNames.size();
         assert((opsetVersion <  10 && inputCount == 1)
                              || (opsetVersion >= 10 && inputCount >= 3 && inputCount <= 5));
 
@@ -26,7 +26,7 @@ public:
 
                 }
                 else{
-                    
+
                 }
             }
         }
