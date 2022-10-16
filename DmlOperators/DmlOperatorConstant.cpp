@@ -65,48 +65,26 @@ class DmlOperatorConstant// : public DmlOperator, public ConstantOfShapeHelper
 {
 public:
     DmlOperatorConstant() = default;
-    DmlOperatorConstant(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph)
+    DmlOperatorConstant(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
-        // get raw data from attribute
-        outputSizes = ;
-        valueDataType = node.outputTensorType;
-        // copy
-        memcpy(constOpRawData.Bytes, rawData, std::min(rawDataByteSize, sizeof(operatorDesc.Value.Bytes)));
+        // 
+        m_constant = expressionMap[node.outputName];
     }
 
     dml::Expression Create(){
-        retrun dml::FillValueConstant(
-                            graph,
-                            outputSizes,
-                            valueDataType,
-                            constOpRawData);
+        return m_constant;
+        // retrun dml::FillValueConstant(
+        //                     graph,
+        //                     outputSizes,
+        //                     valueDataType,
+        //                     constOpRawData);
     }
 
 private:
-    DML_SCALAR_UNION constOpRawData;
-    DML_TENSOR_DATA_TYPE valueDataType;
-    TensorDimensions outputSizes,
-
+    dml::Expression m_constant;
     // std::vector<std::byte> valueBytes;
 };
 
-class DmlOperatorShape : public DmlOperatorConstant
-{
-public:
-    DmlOperatorShape() = default;
-    DmlOperatorShape(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph) 
-        : DmlOperatorConstant()
-    {
-        if (node.inputNames.size() != 1)
-            throw std::exception("Shape parameter number must be 1!");
-
-        valueDataType = TensorType::INT32; // implicitly change UINT64 to UINT32, INT64 to INT32
-
-        std::memcpy(outputSizes.data(), node.outputInfo.shapes, node.outputInfo.GetSize() * sizeof(uint32_t));
-        // copy
-        memcpy(constOpRawData.Bytes, node.inputInfo[0].shapes, node.inputInfo[0].GetSize() * sizeof(uint32_t));
-    }
-};
 
 // DML_OP_DEFINE_CREATION_FUNCTION(ConstantOfShape, DmlOperatorConstantOfShape);
 DML_OP_DEFINE_CREATION_FUNCTION(Constant, DmlOperatorConstant);

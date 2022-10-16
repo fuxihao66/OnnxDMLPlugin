@@ -1,6 +1,6 @@
 
 // force using fp16 and int/uint 32
-inline DML_TENSOR_DATA_TYPE OnnxTensorType2DmlTensorType(const TensorType type) {
+inline DML_TENSOR_DATA_TYPE TensorType2DmlTensorType(const TensorType type) {
     switch(type){
     case UINT64:
         return UINT32;

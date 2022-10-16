@@ -6,25 +6,34 @@
 namespace Dml
 {
 
-class DmlOperatorSlice : public DmlOperator, public SliceHelper
+class DmlOperatorSlice //: public DmlOperator, public SliceHelper
 {
 public:
-    DmlOperatorSlice(const MLOperatorKernelCreationContext& kernelInfo, uint32_t opsetVersion)
-    :   DmlOperator(kernelInfo),
-        SliceHelper(kernelInfo, kernelInfo.GetTensorShapeDescription(), opsetVersion)
+    DmlOperatorSlice(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    // :   DmlOperator(kernelInfo),
+    //     SliceHelper(kernelInfo, kernelInfo.GetTensorShapeDescription(), opsetVersion)
     {
-        const uint32_t inputCount = kernelInfo.GetInputCount();
-        ML_CHECK_VALID_ARGUMENT((opsetVersion <  10 && inputCount == 1)
+        const uint32_t inputCount = node.inputInfo.size();
+        assert((opsetVersion <  10 && inputCount == 1)
                              || (opsetVersion >= 10 && inputCount >= 3 && inputCount <= 5));
-        ML_CHECK_VALID_ARGUMENT(kernelInfo.GetOutputCount() == 1);
 
-        std::vector<std::optional<uint32_t>> kernelInputIndices = { 0 }; // Only bind GPU to first 'data' tensor.
-        DmlOperator::Initialize(kernelInfo, kernelInputIndices, std::nullopt, std::nullopt, std::nullopt, /*minimumDimensionCount*/ 1);
+        if (opsetVersion < 10){
+            std::vector<int> attri;
+            {
+                std::vector<char> temp;
+                bool hasAxis = node.GetAttribute(axes, ONNX_PARSER::AttributeType::INTS, temp);
+                if (!hasAxis){
 
-        const uint32_t inputTensorRank = m_inputTensorDescs[0].GetDimensionCount();
-        assert(inputTensorRank >= gsl::narrow_cast<uint32_t>(m_offsets.size()));
-        assert(inputTensorRank >= gsl::narrow_cast<uint32_t>(m_sizes.size()));
-        assert(inputTensorRank >= gsl::narrow_cast<uint32_t>(m_strides.size()));
+                }
+                else{
+                    
+                }
+            }
+        }
+        else{
+
+        }
+
 
         std::vector<DML_TENSOR_DESC> inputDescs = GetDmlInputDescs();
         std::vector<DML_TENSOR_DESC> outputDescs = GetDmlOutputDescs();
@@ -40,15 +49,25 @@ public:
         DML_OPERATOR_DESC opDesc = { DML_OPERATOR_SLICE1, &sliceDesc };
         SetDmlOperatorDesc(opDesc, kernelInfo);
     }
+
+    dml::Expression Create(){
+
+        return dml::Slice(
+                            m_input,
+                            inputWindowOffsets,
+                            inputWindowSizes,
+                            inputWindowStrides);
+    }
+private:
+    dml::Expression m_input;
+    std::vector<uint32_t> inputWindowOffsets;
+    std::vector<uint32_t> inputWindowSizes;
+    std::vector<int32_t> inputWindowStrides;
 };
 
-void CALLBACK QuerySlice(IMLOperatorSupportQueryContextPrivate* context, bool* isSupported)
-{
-    *isSupported = (context->GetInputCount() <= 5);
-}
-
-DML_OP_DEFINE_CREATION_FUNCTION(Slice7,  VersionedKernel<DmlOperatorSlice, 7> );
-DML_OP_DEFINE_CREATION_FUNCTION(Slice10, VersionedKernel<DmlOperatorSlice, 10>);
-DML_OP_DEFINE_CREATION_FUNCTION(Slice11, VersionedKernel<DmlOperatorSlice, 11>);
-DML_OP_DEFINE_CREATION_FUNCTION(Slice13, VersionedKernel<DmlOperatorSlice, 13>);
+DML_OP_DEFINE_CREATION_FUNCTION(Slice,  DmlOperatorSlice );
+// DML_OP_DEFINE_CREATION_FUNCTION(Slice7,  VersionedKernel<DmlOperatorSlice, 7> );
+// DML_OP_DEFINE_CREATION_FUNCTION(Slice10, VersionedKernel<DmlOperatorSlice, 10>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Slice11, VersionedKernel<DmlOperatorSlice, 11>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Slice13, VersionedKernel<DmlOperatorSlice, 13>);
 } // namespace Dml

@@ -36,17 +36,19 @@ void CreateDMLResources(const std::wstring& path_to_onnx){
 
     // ComPtr<IDMLCompiledOperator> ppdmlGraph;
     // std::vector<array<unsigned int, 2>> weightsBinding;
-    // char* dmlWeights;
-    // unsigned int weightBytes;
+    // std::vector<char> dmlWeights;
     // ID3D12Resource * pWeightBuffer;
-    auto ok = ParseFromFile(path_to_onnx, inputMaps, outMaps, graphNodes, graphInitializers, weightsBinding, &dmlWeights, weightBytes)
+    auto ok = ParseFromFile(path_to_onnx, inputMaps, outMaps, graphNodes, graphInitializers, weightsBinding, dmlWeights,  opsetVersion)
     if (!ok){
         assert(0);
         throw std::exception("Parsing onnx file");
     }
+    // unsigned int weightBytes = dmlWeights.size();
 
     m_modelInputNum = inputMaps.size();
     m_modelOutputNum = outMaps.size();
+
+    currentInputIndex = 0;
 
     // create graph
     {
@@ -69,6 +71,8 @@ void CreateDMLResources(const std::wstring& path_to_onnx){
         for (auto & initializerPair : graphInitializers){
             auto& initializerInfo = initializerPair.second;
             expressionMap[] = dml::InputTensor(graph, initializerInfo.index + modelInputNum, dml::TensorDesc(initializerInfo.tensorType, flags, { 1, 64, 1, 1 }, policy));
+
+            currentInputIndex = std::max(initializerInfo.index + modelInputNum + 1, currentInputIndex);
         }
 
         auto TopologicalSort = [](const std::map<std::string, Op>& graph, std::vector<std::string>& sortedKey){
@@ -118,13 +122,32 @@ void CreateDMLResources(const std::wstring& path_to_onnx){
             }
         }
 
+
+        // weightsBinding, &dmlWeights, weightBytes
         std::vector<std::string> sortedGraphKeys;
         // because we use dmlx to compile whole network to a graph, so we need to deal with operator dependency
         TopologicalSort(graphNodes, sortedGraphKeys);  
         // TODO: create dml operator based on onnx operator type
         for (auto & graphNodeKey : sortedGraphKeys){
-            auto expression = CreateExpression(expressionMap, graphNodes[graphNodeKey]);
-            expressionMap[graphNodeKey] = expression;
+            auto & opNode = graphNodes[graphNodeKey];
+            if (opNode.opType() == "Shape"){ // not supported by DML, only STATIC GRAPH is supported right now
+                auto & inputExpresion = expressionMap[opNode.inputNames[0]];
+                Dimensions inputShape = inputExpresion.GetOutputDesc().sizes;
+                
+                auto shapeByteSize = inputShape.size() * sizeof(UINT32);
+                auto prevStride = dmlWeights.size();
+                // TODO: handling weights to upload
+                weightsBinding.push_back(BindingInfo(prevStride, shapeByteSize));
+                dmlWeights.resize(prevStride + shapeByteSize);
+                memcpy(dmlWeights.data() + prevStride, inputShape.data(), shapeByteSize);
+                expressionMap[graphNodeKey] = dml::InputTensor(graph, currentInputIndex, dml::TensorDesc(UINT32, flags, { inputShape.size() }, policy));
+                currentInputIndex += 1;
+            }
+            else{
+                auto expression = CreateExpression(expressionMap, opNode, opsetVersion);
+                expressionMap[graphNodeKey] = expression;
+            }
+            
         }
         
 

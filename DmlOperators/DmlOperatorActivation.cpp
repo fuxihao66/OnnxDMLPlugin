@@ -40,62 +40,110 @@ public:
         const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph
         )
     {
-
-
+        std::vector<char> attribVal;
+        
         switch (operatorType)
         {
         case DML_OPERATOR_ACTIVATION_ELU:
         case DML_OPERATOR_ACTIVATION_CELU:
-            operatorDesc.elu.Alpha = ;
+        {
+            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasAlpha)
+                memcpy(&operatorDesc.elu.Alpha, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.elu.Alpha = 1.0f;
             break;
-
+        }
         // case DML_OPERATOR_ACTIVATION_SOFTMAX:
         // case DML_OPERATOR_ACTIVATION_LOG_SOFTMAX:
         // case DML_OPERATOR_ACTIVATION_HARDMAX:
         // case DML_OPERATOR_ACTIVATION_SOFTMAX1:
         // case DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1:
         // case DML_OPERATOR_ACTIVATION_HARDMAX1:
-
         case DML_OPERATOR_ACTIVATION_HARD_SIGMOID:
-            operatorDesc.hardSigmoid.Alpha = ;
-            operatorDesc.hardSigmoid.Beta  = ;
+        {
+            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasAlpha)
+                memcpy(&operatorDesc.hardSigmoid.Alpha, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.hardSigmoid.Alpha = 0.2f;
+            bool hasBeta = node.GetAttribute("beta", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasBeta)
+                memcpy(&operatorDesc.hardSigmoid.Beta, attribVal.data(), attribVal.size());
+            else   
+                operatorDesc.hardSigmoid.Beta = 0.5f;
             break;
-
+        }
         case DML_OPERATOR_ACTIVATION_LEAKY_RELU:
-            operatorDesc.leakyRelu.Alpha = ;
+            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasAlpha)
+                memcpy(&operatorDesc.leakyRelu.Alpha, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.leakyRelu.Alpha = 0.01f;
             break;
 
-        case DML_OPERATOR_ACTIVATION_LINEAR:
-            operatorDesc.linear.Alpha = ;
-            operatorDesc.linear.Beta  = ;
-            break;
+        // case DML_OPERATOR_ACTIVATION_LINEAR: // TODO: NOT USED
+        //     bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+        //     if (hasAlpha)
+        //         memcpy(&operatorDesc.linear.Alpha, attribVal.data(), attribVal.size());
+        //     else
+        //         operatorDesc.linear.Alpha = 0.2f;
+        //     bool hasBeta = node.GetAttribute("beta", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+        //     if (hasBeta)
+        //         memcpy(&operatorDesc.linear.Beta, attribVal.data(), attribVal.size());
+        //     else   
+        //         operatorDesc.linear.Beta = 0.5f;
+        //     break;
 
-        case DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS:
-            operatorDesc.parametricSoftplus.Alpha = ;
-            operatorDesc.parametricSoftplus.Beta  = ;
-            break;
+        // case DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS:  // TODO: NOT USED
+        //     operatorDesc.parametricSoftplus.Alpha = ;
+        //     operatorDesc.parametricSoftplus.Beta  = ;
+        //     break;
 
         case DML_OPERATOR_ACTIVATION_SCALED_ELU:
-            operatorDesc.scaledElu.Alpha = ;
-            operatorDesc.scaledElu.Gamma = ;
+        {
+            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasAlpha)
+                memcpy(&operatorDesc.scaledElu.Alpha, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.scaledElu.Alpha = 1.67326f;
+            bool hasGamma = node.GetAttribute("gamma", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasGamma)
+                memcpy(&operatorDesc.scaledElu.Gamma, attribVal.data(), attribVal.size());
+            else   
+                operatorDesc.scaledElu.Gamma = 1.0507f;
             break;
+        }
 
-        case DML_OPERATOR_ACTIVATION_SCALED_TANH:
-            operatorDesc.scaledTanh.Alpha = ;
-            operatorDesc.scaledTanh.Beta  = ;
-            break;
+        // case DML_OPERATOR_ACTIVATION_SCALED_TANH: // TODO: NOT USED
+        //     operatorDesc.scaledTanh.Alpha = ;
+        //     operatorDesc.scaledTanh.Beta  = ;
+        //     break;
 
         case DML_OPERATOR_ACTIVATION_SOFTPLUS:
+        
             operatorDesc.softplus.Steepness = 1.0f;
             break;
 
         case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU:
-            operatorDesc.thresholdedRelu.Alpha = ;
+            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasAlpha)
+                memcpy(&operatorDesc.thresholdedRelu.Alpha, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.thresholdedRelu.Alpha = 1.f;
             break;
 
         case DML_OPERATOR_ACTIVATION_SHRINK:
-            operatorDesc.shrink.Bias = ;
-            operatorDesc.shrink.Threshold = ;
+            bool hasBias = node.GetAttribute("bias", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasBias)
+                memcpy(&operatorDesc.shrink.Bias, attribVal.data(), attribVal.size());
+            else
+                operatorDesc.shrink.Bias = 0.f;
+            bool hasThreshold = node.GetAttribute("lambd", ONNX_PARSER::AttributeType::FLOAT, attribVal);
+            if (hasThreshold)
+                memcpy(&operatorDesc.shrink.Threshold, attribVal.data(), attribVal.size());
+            else   
+                operatorDesc.shrink.Threshold = 0.5f;
             break;
 
         case DML_OPERATOR_ACTIVATION_IDENTITY:
@@ -183,7 +231,7 @@ private:
 DML_OP_DEFINE_CREATION_FUNCTION(Sigmoid,             DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SIGMOID>);
 DML_OP_DEFINE_CREATION_FUNCTION(HardSigmoid,         DmlOperatorActivation<DML_OPERATOR_ACTIVATION_HARD_SIGMOID>);
 DML_OP_DEFINE_CREATION_FUNCTION(Tanh,                DmlOperatorActivation<DML_OPERATOR_ACTIVATION_TANH>);
-DML_OP_DEFINE_CREATION_FUNCTION(ScaledTanh,          DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SCALED_TANH>);
+// DML_OP_DEFINE_CREATION_FUNCTION(ScaledTanh,          DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SCALED_TANH>);
 DML_OP_DEFINE_CREATION_FUNCTION(Relu,                DmlOperatorActivation<DML_OPERATOR_ACTIVATION_RELU>);
 DML_OP_DEFINE_CREATION_FUNCTION(Celu,                DmlOperatorActivation<DML_OPERATOR_ACTIVATION_CELU>);
 DML_OP_DEFINE_CREATION_FUNCTION(LeakyRelu,           DmlOperatorActivation<DML_OPERATOR_ACTIVATION_LEAKY_RELU>);
@@ -193,7 +241,7 @@ DML_OP_DEFINE_CREATION_FUNCTION(Elu,                 DmlOperatorActivation<DML_O
 DML_OP_DEFINE_CREATION_FUNCTION(Selu,                DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SCALED_ELU>);
 DML_OP_DEFINE_CREATION_FUNCTION(Softsign,            DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SOFTSIGN>);
 DML_OP_DEFINE_CREATION_FUNCTION(Softplus,            DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SOFTPLUS>);
-DML_OP_DEFINE_CREATION_FUNCTION(ParametricSoftplus,  DmlOperatorActivation<DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS>);
+// DML_OP_DEFINE_CREATION_FUNCTION(ParametricSoftplus,  DmlOperatorActivation<DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS>);
 DML_OP_DEFINE_CREATION_FUNCTION(Dropout,             DmlOperatorActivation<DML_OPERATOR_ACTIVATION_IDENTITY>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Softmax,             DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SOFTMAX>);
 // // DML_OP_DEFINE_CREATION_FUNCTION(Softmax13,           DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SOFTMAX1>);

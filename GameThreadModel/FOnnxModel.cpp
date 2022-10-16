@@ -40,7 +40,7 @@ private:
 class FOnnxModel{
 
 private:
-    uploadWeightViaGraphBuilder;
+    bool uploadWeightViaGraphBuilder;
     std::wstring m_model_filename;
     std::string m_model_name;
 public:
