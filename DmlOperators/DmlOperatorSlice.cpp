@@ -17,37 +17,103 @@ public:
         assert((opsetVersion <  10 && inputCount == 1)
                              || (opsetVersion >= 10 && inputCount >= 3 && inputCount <= 5));
 
-        if (opsetVersion < 10){
-            std::vector<int> attri;
-            {
-                std::vector<char> temp;
-                bool hasAxis = node.GetAttribute(axes, ONNX_PARSER::AttributeType::INTS, temp);
-                if (!hasAxis){
+        m_input = expressionMap[node.inputNames[0]];
+        Dimensions inputShape = m_input.GetOutputDesc().sizes;
 
+        std::vector<int> steps;
+        std::vector<int> axes;
+        std::vector<int> ends;
+        std::vector<int> starts;
+
+        std::vector<char> temp;
+        if (opsetVersion < 10){
+            auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
+                bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS, temp);
+                if (hasAttri){
+                    attriVec.resize(temp.size() / 4);
+                    memcpy(attriVec.data(), temp.data(), temp.size());
                 }
                 else{
-
+                    assert(false);
+                }
+            };
+            getIntsAttriAndCopy("starts", starts);
+            getIntsAttriAndCopy("ends", ends);
+            {
+                bool hasAxis = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS, temp);
+                if (!hasAxis){
+                    axes.resize(temp.size() / 4);
+                    memcpy(axes.data(), temp.data(), temp.size());
                 }
             }
         }
         else{
-
+            auto getTensorAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
+                bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::TENSOR, temp);
+                if (hasAttri){
+                    attriVec.resize(temp.size() / 4);
+                    memcpy(attriVec.data(), temp.data(), temp.size());
+                }
+                else{
+                    assert(false);
+                }
+            };
+            getTensorAttriAndCopy("starts", starts);
+            getTensorAttriAndCopy("ends", ends);
+            {
+                bool hasAxis = node.GetAttribute("axes", ONNX_PARSER::AttributeType::TENSOR, temp);
+                if (!hasAxis){
+                    axes.resize(temp.size() / 4);
+                    memcpy(axes.data(), temp.data(), temp.size());
+                }
+            }
+            {
+                bool hasSteps = node.GetAttribute("steps", ONNX_PARSER::AttributeType::TENSOR, temp);
+                if (!hasSteps){
+                    steps.resize(temp.size() / 4);
+                    memcpy(steps.data(), temp.data(), temp.size());
+                }
+            }
+            
+        }
+        if (axes.empty()){
+            axes.resize(starts.size());
+            std::iota(axes.begin(), axes.end(), 0);
+        }
+        if (steps.empty()){
+            steps.resize(axes);
+            std::fill(steps.begin(), steps.end(), 1);
         }
 
+        inputWindowOffsets.resize(inputShape.size());
+        inputWindowSizes.resize(inputShape.size());
+        inputWindowStrides.resize(inputShape.size());
 
-        std::vector<DML_TENSOR_DESC> inputDescs = GetDmlInputDescs();
-        std::vector<DML_TENSOR_DESC> outputDescs = GetDmlOutputDescs();
+        std::fill(inputWindowOffsets.begin(), inputWindowOffsets.end(), 0);
+        std::fill(inputWindowSizes.begin(), inputWindowSizes.end(), 0);
+        std::fill(inputWindowStrides.begin(), inputWindowStrides.end(), 0);
 
-        DML_SLICE1_OPERATOR_DESC sliceDesc = {};
-        sliceDesc.InputTensor = inputDescs.data();
-        sliceDesc.OutputTensor = outputDescs.data();
-        sliceDesc.DimensionCount = gsl::narrow_cast<uint32_t>(m_offsets.size());
-        sliceDesc.InputWindowOffsets = m_offsets.data();
-        sliceDesc.InputWindowSizes = m_sizes.data();
-        sliceDesc.InputWindowStrides = m_strides.data();
 
-        DML_OPERATOR_DESC opDesc = { DML_OPERATOR_SLICE1, &sliceDesc };
-        SetDmlOperatorDesc(opDesc, kernelInfo);
+        for (int i = 0; i < axes.size(); i++){
+            int axis = axes[i];
+
+            // modify start and end
+            auto checkAndModifiyIfMinusOrOOB = [&](int& val){
+                if (val < 0){
+                    val = inputShape[axis] + val;
+                }
+                else if (val >= inputShape[axis]){
+                    val = inputShape[axis];
+                }
+            }
+            
+            checkAndModifiyIfMinusOrOOB(starts[axis]);
+            checkAndModifiyIfMinusOrOOB(ends[axis]);
+
+            inputWindowOffsets[axis] = starts[axis];
+            inputWindowSizes[axis] = ends[axis] - starts[axis];
+            inputWindowStrides[axis] = steps[axis];
+        }
     }
 
     dml::Expression Create(){

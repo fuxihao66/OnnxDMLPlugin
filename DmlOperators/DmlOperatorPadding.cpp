@@ -14,7 +14,8 @@ public:
         const uint32_t inputCount = node.inputNames.size();
         assert((opsetVersion >= 2 && opsetVersion < 11 && inputCount == 1)
                              || (opsetVersion >= 11 && inputCount >= 2 && inputCount <= 3));
-
+        m_input = expressionMap[node.inputNames[0]];
+        Dimensions inputShape = m_input.GetOutputDesc().sizes;
         
         std::vector<char> tempAttri;
         { 
@@ -46,9 +47,20 @@ public:
             // TODO: not supported yet
             assert(false);
         }
-        if (opsetVersion >= 11){
-            // get pads and constvalue from initializer
 
+        std::vector<int> paddings;
+        if (opsetVersion >= 11){
+            bool hasPads = node.GetAttribute("pads", ONNX_PARSER::AttributeType::TENSOR, tempAttri);
+            if (hasPads){
+                paddings.resize(tempAttri.size() / 4);
+                memcpy(paddings.data(), tempAttri.data(), tempAttri.size());
+            }
+
+            // TODO: CHECK INITIALIZER TYPE (scalar ??)
+            bool hasConstants = node.GetAttribute("constant_value", ONNX_PARSER::AttributeType::TENSOR, tempAttri);
+            if (hasConstants){
+                memcpy(&paddingValue, tempAttri.data(), tempAttri.size());
+            }
         }
         else if (opsetVersion >= 2){
             bool hasValue = node.GetAttribute("value", ONNX_PARSER::AttributeType::FLOAT, tempAttri);
@@ -58,11 +70,10 @@ public:
             else{
                 paddingValue = 0.f;
             }
-            std::vector<int> pads;
             bool hasPads = node.GetAttribute("pads", ONNX_PARSER::AttributeType::INTS, tempAttri);
             if (hasPads){
-                pads.resize(tempAttri.size() / 4);
-                memcpy(pads.data(), tempAttri.data(), tempAttri.size());
+                paddings.resize(tempAttri.size() / 4);
+                memcpy(paddings.data(), tempAttri.data(), tempAttri.size());
             }
             else{
                 assert(false);
@@ -72,18 +83,16 @@ public:
             assert(false);
         }
 
+        assert(paddings.size() == inputShape.size() * 2);
         // // Pad the parameters to respect DML's requirements
-        // m_startPadding.insert(
-        //     m_startPadding.begin(),
-        //     m_inputTensorDescs[0].GetDimensionCount() - gsl::narrow_cast<uint32_t>(m_startPadding.size()),
-        //     0);
-
-        // m_endPadding.insert(
-        //     m_endPadding.begin(),
-        //     m_inputTensorDescs[0].GetDimensionCount() - gsl::narrow_cast<uint32_t>(m_endPadding.size()),
-        //     0);
-
-    }
+        startPadding.resize(inputShape.size());
+        endPadding.resize(inputShape.size());
+        int index = 0;
+        for (int i = 0; i < inputShape.size(); i++){
+            startPadding[i] = paddings[index++];
+            endPadding[i] = paddings[index++];
+        }
+   }
 
     dml::Expression Create(){
         return dml::Padding(

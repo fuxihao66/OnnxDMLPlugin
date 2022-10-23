@@ -360,79 +360,100 @@ void ComputePixelOffsetsAndScales(
 namespace Dml
 {
 
-class DmlOperatorResize : public DmlOperator, public ResizeHelper
+class DmlOperatorResize //: public DmlOperator, public ResizeHelper
 {
 public:
     // Resample a multidimensional image to a new size.
-    DmlOperatorResize(const MLOperatorKernelCreationContext& kernelCreationContext)
-    :   DmlOperator(kernelCreationContext), 
-        ResizeHelper(kernelCreationContext, kernelCreationContext.GetTensorShapeDescription())
+    DmlOperatorResize(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
-        ML_CHECK_VALID_ARGUMENT(!m_scales.empty(), "Resize/Upsample expect scales, either a 2nd input tensors or 'scales' attribute.");
-        ML_CHECK_VALID_ARGUMENT(kernelCreationContext.GetOutputCount() == 1, "Resize/Upsample expect 1 output tensor.");
+        if (opsetVersion > 15)
+            assert(false); // TODO: Not supported yet
+        
+        m_input = expressionMap[node.inputNames[0]];
+        Dimensions inputShape = m_input.GetOutputDesc().sizes;
 
-        // Use only the first input tensor. In the case of Resize or the later Upsample-v9,
-        // the second tensor is CPU based and should not be passed to Resize.
-        std::vector<std::optional<uint32_t>> inputIndices = { 0 };
-        std::vector<std::optional<uint32_t>> outputIndices = { 0 };
-        DmlOperator::Initialize(kernelCreationContext, inputIndices, outputIndices);
+        if (node.opType == "Upsample"){
+            std::vector<char> temp;
+            
+            if (opsetVersion >= 10)
+                assert(false); // deprecated 
+            if (opsetVersion == 9){
+                node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR, temp);
+                scales.resize(temp.size() / 4);
+                memcpy(scales.data(), temp.data(), temp.size());
+            }
+            else{
+                float heightScale;
+                float widthScale;
 
-        // Because DirectML supports a limited number of dimensions, try to squeeze the dimension count
-        // to only those which actually matter. Models sometimes use a greater number of dimensions,
-        // even though those dimensions have no significance and can be elided (nop 1's), coercing the
-        // total dimension count back down to a supported value.
+                node.GetAttribute("height_scale", ONNX_PARSER::AttributeType::FLOAT, temp);
+                memcpy(&heightScale, temp.data(), temp.size());
 
-        std::vector<uint32_t> squeezedInputShape = m_inputDimensions;
-        std::vector<uint32_t> squeezedOutputShape = m_outputDimensions;
-        std::vector<uint32_t> squeezableDimensionIndices;
-        std::vector<float> paddedScales = m_scales;
-        FindValueIndices<uint32_t>(gsl::make_span(m_outputDimensions), 1u, /*out*/ squeezableDimensionIndices);
-        RemoveValuesByIndex(squeezableDimensionIndices, /*keepOneValue*/ true, /*inout*/ squeezedInputShape);
-        RemoveValuesByIndex(squeezableDimensionIndices, /*keepOneValue*/ true, /*inout*/ paddedScales);
-        RemoveValuesByIndex(squeezableDimensionIndices, /*keepOneValue*/ true, /*inout*/ squeezedOutputShape);
+                node.GetAttribute("width_scale", ONNX_PARSER::AttributeType::FLOAT, temp);
+                memcpy(&widthScale, temp.data(), temp.size());
 
-        // Update the tensor descriptions.
-        MLOperatorTensorDataType inputTensorDataType = kernelCreationContext.GetInputEdgeDescription(0).tensorDataType;
-        auto inputTensorDesc = TensorDesc(inputTensorDataType, squeezedInputShape, squeezedInputShape, TensorAxis::DoNotCoerce, TensorAxis::W, TensorAxis::RightAligned, NchwDimensionCount, 0);
-        auto outputTensorDesc = TensorDesc(inputTensorDataType, squeezedOutputShape, squeezedOutputShape, TensorAxis::DoNotCoerce, TensorAxis::W, TensorAxis::RightAligned, NchwDimensionCount, 0);
-        m_inputTensorDescs[0] = inputTensorDesc;
-        m_outputTensorDescs[0] = outputTensorDesc;
+                scales.push_back(1);
+                scales.push_back(1);
+                scales.push_back(heightScale);
+                scales.push_back(widthScale);
+            }
 
-        // If the output tensor dimension count was right-aligned to a larger size,
-        // then ensure that scales has the same count as the tensor rank by inserting
-        // leading ones, since DirectML requires the scales to have the same count.
-        const uint32_t squeezedDimCount = gsl::narrow_cast<uint32_t>(squeezedOutputShape.size());
-        const uint32_t dmlCompatibleDimCount = outputTensorDesc.GetDimensionCount();
-        if (dmlCompatibleDimCount > squeezedDimCount)
-        {
-            paddedScales.insert(paddedScales.begin(), dmlCompatibleDimCount - squeezedDimCount, 1.0f);
+            if (scales.size() != inputShape.size())
+                assert(false);
+
+            std::string tempMode;
+            {
+                node.GetAttribute("mode", ONNX_PARSER::AttributeType::STRING, temp);
+                tempMode.resize(temp.size());
+                memcpy(tempMode.data(), temp.data(), temp.size());
+            }
+            if (tempMode == "nearest"){
+                mode = DML_INTERPOLATION_MODE_NEAREST_NEIGHBOR;
+            }
+            else if (tempMode == "linear"){
+                mode = DML_INTERPOLATION_MODE_LINEAR;
+            }
+
+            for (int i = 0; i < inputShape.size(); i++){
+                outputSizes.push_back(inputShape[i] * scales[i]);
+
+            }
+
+        }
+        else{ // TODO: Resize
+            assert(false); // Resize not implemented yet
         }
 
-        std::string mode = kernelCreationContext.GetOptionalAttribute<std::string>(AttrName::Mode, "NEAREST");
-        DML_INTERPOLATION_MODE interpolationMode = Dml::MapStringToInteropolationMode(mode);
-
-        // Create the operator description.
-        std::vector<DML_TENSOR_DESC> inputDescs = GetDmlInputDescs();
-        std::vector<DML_TENSOR_DESC> outputDescs = GetDmlOutputDescs();
-
-        DML_RESAMPLE_OPERATOR_DESC operatorDesc = {};
-        operatorDesc.InputTensor = inputDescs.data();
-        operatorDesc.OutputTensor = outputDescs.data();
-        operatorDesc.InterpolationMode = interpolationMode;
-        operatorDesc.Scales = paddedScales.data();
-        operatorDesc.ScaleCount = gsl::narrow_cast<uint32_t>(paddedScales.size());
-
-        DML_OPERATOR_DESC opDesc = { DML_OPERATOR_RESAMPLE, &operatorDesc };
-        SetDmlOperatorDesc(opDesc, kernelCreationContext);
     }
+    dml::Expression Create(){
+        return dml::Resample(
+            m_input,
+            outputSizes,
+            mode,
+            scales
+            // inputPixelOffsets,
+            // outputPixelOffsets
+        );
+    }
+private:
+    dml::Expression m_input;
+    TensorDimensions outputSizes;
+    DML_INTERPOLATION_MODE mode;
+    std::vector<float> scales;
+    // std::vector<float> inputPixelOffsets; // not supported by Upsample, but will be used for Resize
+    // std::vector<float> outputPixelOffsets;
 };
 
 // DML_OP_DEFINE_CREATION_FUNCTION(Resize, DmlOperatorResize);
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample, DmlOperatorResize);
-DML_OP_DEFINE_CREATION_FUNCTION(Resize10, VersionedKernel<DmlOperatorResize, 10>);
-DML_OP_DEFINE_CREATION_FUNCTION(Resize11, VersionedKernel<DmlOperatorResize, 11>);
-DML_OP_DEFINE_CREATION_FUNCTION(Resize13, VersionedKernel<DmlOperatorResize, 13>);
-DML_OP_DEFINE_CREATION_FUNCTION(Upsample7, VersionedKernel<DmlOperatorResize, 7>);
-DML_OP_DEFINE_CREATION_FUNCTION(Upsample9, VersionedKernel<DmlOperatorResize, 9>);
-DML_OP_DEFINE_CREATION_FUNCTION(Upsample10, VersionedKernel<DmlOperatorResize, 10>);
+
+
+// DML_OP_DEFINE_CREATION_FUNCTION(Resize, DmlOperatorResize);
+DML_OP_DEFINE_CREATION_FUNCTION(Upsample, DmlOperatorResize);
+// DML_OP_DEFINE_CREATION_FUNCTION(Resize10, VersionedKernel<DmlOperatorResize, 10>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Resize11, VersionedKernel<DmlOperatorResize, 11>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Resize13, VersionedKernel<DmlOperatorResize, 13>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Upsample7, VersionedKernel<DmlOperatorResize, 7>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Upsample9, VersionedKernel<DmlOperatorResize, 9>);
+// DML_OP_DEFINE_CREATION_FUNCTION(Upsample10, VersionedKernel<DmlOperatorResize, 10>);
 } // namespace Dml

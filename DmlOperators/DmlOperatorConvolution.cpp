@@ -70,38 +70,22 @@ public:
         }
 
         getIntsAttriAndCopy("dilations", dialations);
-        getIntsAttriAndCopy("kernel_shape", kernelShape);
+        // getIntsAttriAndCopy("kernel_shape", kernelShape);// no necessity
         getIntsAttriAndCopy("pads", paddings);
         getIntsAttriAndCopy("strides", strides);
         
-        // uint32_t biasIndex = hasDynamicPads ? 3 : 2;
-        // bool hasBiasInput = kernelInfo.GetInputCount() > biasIndex;
+        outputPaddings.resize(paddings.size() / 2);
+        startPaddings.resize(paddings.size() / 2);
+        endPaddings.resize(paddings.size() / 2);
 
-        // std::vector<std::optional<uint32_t>> kernelInputIndices = { 0, 1, biasIndex };
+        std::fill(outputPaddings.begin(), outputPaddings.end(), 0);
 
-        // DmlOperator::Initialize(kernelInfo, kernelInputIndices);
+        int index = 0;
+        for (int i = 0; i < paddings.size() / 2; i++){
+            startPaddings[i] = paddings[index++];
+            endPaddings[i] = paddings[index++];
+        }
 
-        // KernelArgs kernelArgs(m_kernel, NchwSpatialDimensionCount);
-
-        // // Zero the output padding before sending to DirectML. Although it was needed to compute
-        // // the output size, we don't want DML to see the values, which should just be ignored.
-        // memset(kernelArgs.outputPadding, 0, sizeof(kernelArgs.outputPadding));
-
-        // DML_CONVOLUTION_OPERATOR_DESC convDesc = {};
-        // convDesc.InputTensor = &inputDescs[0];
-        // convDesc.FilterTensor = &inputDescs[1];
-        // convDesc.BiasTensor = hasBiasInput ? &inputDescs[biasIndex] : nullptr;
-        // convDesc.OutputTensor = &outputDescs[0];
-        // convDesc.Mode = mode;
-        // convDesc.Direction = direction;
-        // convDesc.DimensionCount = kernelArgs.spatialDimensionCount;
-        // convDesc.Strides = kernelArgs.strides;
-        // convDesc.Dilations = kernelArgs.dilations;
-        // convDesc.StartPadding = kernelArgs.startPadding;
-        // convDesc.EndPadding = kernelArgs.endPadding;
-        // convDesc.OutputPadding = kernelArgs.outputPadding;
-        // convDesc.GroupCount = m_groupCount;
-        // convDesc.FusedActivation = fusedActivation ? &fusedActivationDmlDesc : nullptr;
 
     }
 
@@ -111,9 +95,9 @@ public:
                     .Direction(DML_CONVOLUTION_DIRECTION_FORWARD) // TODO: Add reverse direction to support transposedconv
                     .Strides(strides)
                     .Dilations(dialations)
-                    .StartPadding()
-                    .EndPadding()
-                    .OutputPadding()
+                    .StartPadding(startPaddings)
+                    .EndPadding(endPaddings)
+                    .OutputPadding(outputPaddings)
                     .GroupCount(group)
                     //.FusedActivation(dml::FusedActivation::Relu())
                     .Build();
@@ -122,8 +106,10 @@ private:
     // bool hasBias = true;
     std::string autoPad;
     std::vector<int> dialations;
-    std::vector<int> kernelShape;
-    std::vector<int> paddings;
+    // std::vector<int> kernelShape;
+    std::vector<int> startPaddings;
+    std::vector<int> endPaddings;
+    std::vector<int> outputPaddings;
     std::vector<int> strides;
     int group;
     dml::Expression m_input;
