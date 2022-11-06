@@ -9,15 +9,15 @@ namespace Dml
 class DmlOperatorInstanceNormalization
 {
 public:
-    DmlOperatorInstanceNormalization(const std::map<std::string, dml::Expression>& expressionMap, 
-                                     const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorInstanceNormalization(std::map<std::string, dml::Expression>& expressionMap, 
+                                     ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         m_input = expressionMap[node.inputNames[0]];
         m_weight = expressionMap[node.inputNames[1]];
         m_bias = expressionMap[node.inputNames[2]];
         
-        Dimensions inputShape = m_inputs.GetOutputDesc().sizes;
-        Dimensions weightShape = m_weight.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions weightShape = m_weight.GetOutputDesc().sizes;
         
         {
             std::vector<char> temp;

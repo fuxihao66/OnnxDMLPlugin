@@ -364,7 +364,7 @@ class DmlOperatorResize //: public DmlOperator, public ResizeHelper
 {
 public:
     // Resample a multidimensional image to a new size.
-    DmlOperatorResize(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorResize(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (opsetVersion > 15)
             assert(false); // TODO: Not supported yet

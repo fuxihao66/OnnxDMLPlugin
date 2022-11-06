@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -9,18 +10,18 @@ namespace Dml
 class DmlOperatorGather 
 {
 public:
-    DmlOperatorGather(const std::map<std::string, dml::Expression>& expressionMap, 
-                      const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorGather(std::map<std::string, dml::Expression>& expressionMap, 
+                      ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     
     {
         if (node.inputNames.size() != 2)
             throw std::exception("Gather expects 2 inputs!");
 
-        m_input = expressionMap[node.inputsNames[0]];
-        m_indices = expressionMap[node.inputsNames[1]];
+        m_input = expressionMap[node.inputNames[0]];
+        m_indices = expressionMap[node.inputNames[1]];
 
-        Dimensions inputShape = m_inputs.GetOutputDesc().sizes;
-        Dimensions indicesShape = m_indices.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions indicesShape = m_indices.GetOutputDesc().sizes;
         
 
         int tempaxis;

@@ -38,7 +38,7 @@ class DmlOperatorActivation
 {
 public:
     DmlOperatorActivation(
-        std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
+        std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
         )
     {
         std::vector<char> attribVal;

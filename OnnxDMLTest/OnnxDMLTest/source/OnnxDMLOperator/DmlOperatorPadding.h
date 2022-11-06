@@ -9,7 +9,7 @@ namespace Dml
 class DmlOperatorPadding// : public DmlOperator, public PaddingHelper
 {
 public:
-    DmlOperatorPadding(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorPadding(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         const uint32_t inputCount = node.inputNames.size();
         assert((opsetVersion >= 2 && opsetVersion < 11 && inputCount == 1)

@@ -11,7 +11,7 @@ namespace Dml
 class DmlOperatorConcat 
 {
 public:
-    DmlOperatorConcat(const std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorConcat(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() <= 1)
             assert(false);  // 

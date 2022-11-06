@@ -11,12 +11,12 @@
 #define REG_INFO_COPY(operatorName) \
     #operatorName, CreateCopy,
 
-#define DML_OP_EXTERN_CREATION_FUNCTION(operatorName) extern dml::Expression __stdcall Create##operatorName(std::map<std::string, dml::Expression> &expressionMap, const ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
+#define DML_OP_EXTERN_CREATION_FUNCTION(operatorName) extern dml::Expression __stdcall Create##operatorName(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
 
 
 #define DML_OP_DEFINE_CREATION_FUNCTION(operatorName, ...)                                                                               \
     \
-extern dml::Expression __stdcall Create##operatorName(std::map<std::string, dml::Expression> &expressionMap, const ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion) \
+extern dml::Expression __stdcall Create##operatorName(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion) \
     \
 {                                                                                                                                   \
         using T = __VA_ARGS__;                                                                                                           \

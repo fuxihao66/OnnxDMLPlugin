@@ -9,7 +9,7 @@ namespace Dml
 class DmlOperatorSlice //: public DmlOperator, public SliceHelper
 {
 public:
-    DmlOperatorSlice(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorSlice(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     // :   DmlOperator(kernelInfo),
     //     SliceHelper(kernelInfo, kernelInfo.GetTensorShapeDescription(), opsetVersion)
     {

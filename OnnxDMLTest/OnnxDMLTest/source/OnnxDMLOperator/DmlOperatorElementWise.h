@@ -96,8 +96,8 @@ template <typename TOperatorType, typename TOperatorDesc>
 class DmlOperatorElementwiseBinary 
 {
 public:
-    DmlOperatorElementwiseBinary(const std::map<std::string, dml::Expression>& expressionMap, 
-                                 const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorElementwiseBinary(std::map<std::string, dml::Expression>& expressionMap, 
+                                 ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 2)
             throw std::exception("Binary operator must have 2 parameters!")

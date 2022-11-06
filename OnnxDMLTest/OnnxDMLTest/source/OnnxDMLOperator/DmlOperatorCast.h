@@ -14,8 +14,9 @@ public:
 
     DmlOperatorCast(
         std::map<std::string, dml::Expression>& expressionMap, 
-        const ONNX_PARSER::Op& node, 
-        dml::Graph& graph)
+        ONNX_PARSER::Op& node, 
+        dml::Graph& graph,
+        unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 1)
             throw std::exception("Cast parameter number must be 1!");

@@ -13,7 +13,7 @@ public:
     using Self = DmlOperatorConvolution;
 
     DmlOperatorConvolution(
-        const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion )
+        std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion )
     // :   DmlOperator(kernelInfo),
         // ConvolutionHelperBase(kernelInfo, kernelInfo.GetTensorShapeDescription(), direction == DML_CONVOLUTION_DIRECTION_BACKWARD, hasDynamicPads, 0, 1)
     {

@@ -5,7 +5,7 @@ namespace Dml
 class DmlOperatorUnsqueeze
 {
 public:
-    DmlOperatorUnsqueeze(std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorUnsqueeze(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 1)
             throw std::exception("Unsqueeze parameter number must be 1!");
