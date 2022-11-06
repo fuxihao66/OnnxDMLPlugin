@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -65,7 +66,7 @@ class DmlOperatorConstant// : public DmlOperator, public ConstantOfShapeHelper
 {
 public:
     DmlOperatorConstant() = default;
-    DmlOperatorConstant(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorConstant(std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         // 
         m_constant = expressionMap[node.outputName];

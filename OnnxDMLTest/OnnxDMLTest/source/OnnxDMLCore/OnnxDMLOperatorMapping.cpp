@@ -1,10 +1,9 @@
-
+#include "OnnxDMLOperatorMapping.h"
 // https://github.com/onnx/onnx/blob/main/docs/Operators.md
 // onnxruntime\core\providers\dml\DmlExecutionProvider\src\Operators\OperatorRegistration.cpp
 #include "OperatorRegistration.h"
 
-#include "DirectML.h"
-#include "DirectMLX.h"
+
 // dml define 
 
 #include "../OnnxDMLOperator/DmlOperatorActivation.h"
@@ -47,34 +46,38 @@ DML_OP_EXTERN_CREATION_FUNCTION(Cast);
 DML_OP_EXTERN_CREATION_FUNCTION(Floor);
 DML_OP_EXTERN_CREATION_FUNCTION(Constant); // not implemented in ORT
 DML_OP_EXTERN_CREATION_FUNCTION(Shape);    // not implemented in ORT, use constant to implement shape
+DML_OP_EXTERN_CREATION_FUNCTION(Unsqueeze);  
 // or combine operator?
 
 
 
-using CreateFn = dml::Expression(CALLBACK *)(const std::map<std::string, dml::Expression> &expressionMap, const Op &node, dml::Graph& graph);
+using CreateFn = dml::Expression(CALLBACK *)(std::map<std::string, dml::Expression> &expressionMap, const ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion);
 
-constexpr static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
+static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
     {
         {REG_INFO(Conv, )},
         {REG_INFO(InstanceNormalization, )},
         // Data Reorganization Layers
-        {REG_INFO(Concat, )}, // Adds negative axis.
-        {REG_INFO_VER(Slice, 7, )},
-        {REG_INFO_VER(Slice, 10, )}, // Adds negative axes.
-        {REG_INFO_VER(Slice, 11, )}, // Adds negative axes.
-        {REG_INFO_VER(Slice, 13, )}, // Adds negative axes.
-        {REG_INFO_VER(Pad, 7, )},
-        {REG_INFO_VER(Pad, 11, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
-        {REG_INFO_VER(Pad, 13, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
+        {REG_INFO(Concat,)}, // Adds negative axis.
+        {REG_INFO(Slice, )}, 
+        //{REG_INFO_VER(Slice, 7, )},
+        //{REG_INFO_VER(Slice, 10, )}, // Adds negative axes.
+        //{REG_INFO_VER(Slice, 11, )}, // Adds negative axes.
+        //{REG_INFO_VER(Slice, 13, )}, // Adds negative axes.
+        {REG_INFO(Pad,  )},
+        //{REG_INFO_VER(Pad, 7, )},
+        //{REG_INFO_VER(Pad, 11, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
+        //{REG_INFO_VER(Pad, 13, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
         {REG_INFO(Constant, )},
         {REG_INFO(Shape, )},
         {REG_INFO(Gather, )},
 
         // Data reorganization that merely changes the dimensions while keeping the data identical.
         // {REG_INFO_COPY(Unsqueeze, )}, // used by ORT
-        {REG_INFO_VER(Unsqueeze, 1)},
+        {REG_INFO(Unsqueeze,)},
+        /*{REG_INFO_VER(Unsqueeze, 1)},
         {REG_INFO_VER(Unsqueeze, 11)},
-        {REG_INFO_VER(Unsqueeze, 13)},
+        {REG_INFO_VER(Unsqueeze, 13)},*/
         // Elementwise
         {REG_INFO(Floor, )},
         {REG_INFO(Add, )},
@@ -82,9 +85,10 @@ constexpr static std::unordered_map<std::string, CreateFn> g_operatorRegistratio
         {REG_INFO(Div, )},
 
         // Imaging Operators
-        {REG_INFO_VER(Upsample, 7, )},
-        {REG_INFO_VER(Upsample, 9, /*scales*/)},
-        {REG_INFO_VER(Upsample, 10, /*scales*/)},
+        {REG_INFO(Upsample,)},
+        //{REG_INFO_VER(Upsample, 7, )},
+        //{REG_INFO_VER(Upsample, 9, /*scales*/)},
+        //{REG_INFO_VER(Upsample, 10, /*scales*/)},
         // Activation Functions
         {REG_INFO(Relu, )},
 
@@ -92,7 +96,7 @@ constexpr static std::unordered_map<std::string, CreateFn> g_operatorRegistratio
         {REG_INFO(Cast, )},
 };
 
-dml::Expression CreateExpression(const std::map<std::string, dml::Expression> &expressionMap, const Op &node, dml::Graph& graph)
+dml::Expression CreateExpression(std::map<std::string, dml::Expression> &expressionMap, const ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
 {
-    return g_operatorRegistrationMap[node.opType](expressionMap, node, opsetVersion);
+    return g_operatorRegistrationMap[node.opType](expressionMap, node, graph, opsetVersion);
 }

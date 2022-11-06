@@ -20,14 +20,39 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Common.h" />
-    <ClInclude Include="..\OnnxParser.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\Main.cpp" />
+    <ClCompile Include="source\OnnxDMLCore\AddDmlPassFromOnnx.cpp" />
+    <ClCompile Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.cpp" />
+    <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp" />
+    <ClCompile Include="source\OnnxDMLUtility\OperatorUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\Common\Common.h" />
+    <ClInclude Include="source\Common\OnnxParser.h" />
+    <ClInclude Include="source\helper\d3dx12.h" />
+    <ClInclude Include="source\helper\DirectMLX.h" />
+    <ClInclude Include="source\helper\pch.h" />
+    <ClInclude Include="source\OnnxDMLCore\OnnxDMLOperatorGenerator.h" />
+    <ClInclude Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.h" />
+    <ClInclude Include="source\OnnxDMLCore\OnnxDMLRHIModule.h" />
+    <ClInclude Include="source\OnnxDMLCore\OperatorRegistration.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorActivation.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorCast.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConcat.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConstant.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConvolution.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorElementWise.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorGather.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorInstanceNormalization.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorPadding.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorResize.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorSlice.h" />
+    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.h" />
+    <ClInclude Include="source\thirdParty\jpeg_decoder.h" />
+    <ClInclude Include="source\thirdParty\tiny_jpeg.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -89,7 +114,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>D:\UGit\OnnxDMLPlugin\OnnxDMLTest\OnnxDMLTest;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -129,6 +154,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>.\source</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -10,7 +11,7 @@ namespace Dml
 class DmlOperatorConcat 
 {
 public:
-    DmlOperatorConcat(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorConcat(const std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() <= 1)
             assert(false);  // 
@@ -20,7 +21,7 @@ public:
             m_inputs.push_back(expressionMap[inputName]);
         }
 
-        Dimensions inputShape = m_inputs[0].GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_inputs[0].GetOutputDesc().sizes;
 
         int tempaxis;
         {
@@ -36,7 +37,7 @@ public:
         // get from attribute
         
         if (tempaxis < 0)
-            axis = inputShape.size() + tempaxis
+            axis = inputShape.size() + tempaxis;
         else    
             axis = tempaxis;
 

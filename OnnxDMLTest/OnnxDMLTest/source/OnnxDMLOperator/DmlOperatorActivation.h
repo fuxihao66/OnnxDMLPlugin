@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -37,7 +38,7 @@ class DmlOperatorActivation
 {
 public:
     DmlOperatorActivation(
-        const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion
+        std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
         )
     {
         std::vector<char> attribVal;

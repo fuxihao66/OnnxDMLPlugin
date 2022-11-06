@@ -1,9 +1,11 @@
+#include "../OnnxDMLCore/OperatorRegistration.h"
+
 namespace Dml
 {
 class DmlOperatorUnsqueeze
 {
 public:
-    DmlOperatorUnsqueeze(const std::map<std::string, dml::Expression>& expressionMap, const Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorUnsqueeze(std::map<std::string, dml::Expression>& expressionMap, const ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 1)
             throw std::exception("Unsqueeze parameter number must be 1!");
@@ -13,7 +15,7 @@ public:
         }
         m_input = expressionMap[inputName];
 
-        Dimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         // get unsqueeze axis from attribute 
         std::vector<int> axis;
         {
@@ -44,10 +46,10 @@ public:
         // TODO: use identity to copy first?
         return dml::Reinterpret(m_input,
                                 outputSizes,
-                                nullopt)
+                                std::nullopt);
     }
 private:
-    TensorDimensions outputSizes,
+    dml::TensorDimensions outputSizes;
     // DML_TENSOR_DATA_TYPE valueDataType;
     dml::Expression m_input;
     

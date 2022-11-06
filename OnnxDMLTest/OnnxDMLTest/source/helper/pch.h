@@ -55,8 +55,9 @@
 #include <span>
 #endif
 #include <map>
+#include <unordered_map>
 #include <set>
-
+#include <array>
 // #ifdef _DEBUG
 // #include <dxgidebug.h>
 // #endif
@@ -74,3 +75,9 @@
 #define DMLX_USE_WIL 0
 #include "DirectML.h"
 #include "DirectMLX.h"
+
+
+#include "DescriptorHeap.h"
+
+#include "../Common/Common.h"
+#include "../Common/OnnxParser.h"

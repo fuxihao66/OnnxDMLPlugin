@@ -1,19 +1,20 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
 
-class DmlOperatorCast : public DmlOperator
+class DmlOperatorCast// : public DmlOperator
 {
 public:
-    using Self = DmlOperatorCast;
+    //using Self = DmlOperatorCast;
 
     DmlOperatorCast(
-        const std::map<std::string, dml::Expression>& expressionMap, 
-        const Op& node, 
+        std::map<std::string, dml::Expression>& expressionMap, 
+        const ONNX_PARSER::Op& node, 
         dml::Graph& graph)
     {
         if (node.inputNames.size() != 1)
