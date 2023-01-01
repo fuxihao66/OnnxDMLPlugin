@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 
 union ActivationOperatorDescUnion
@@ -256,4 +256,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Dropout,             DmlOperatorActivation<DML_O
 DML_OP_DEFINE_CREATION_FUNCTION(Shrink,              DmlOperatorActivation<DML_OPERATOR_ACTIVATION_SHRINK>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Gelu,                DmlOperatorActivation<DML_OPERATOR_ACTIVATION_GELU>);
 
-} // namespace Dml
+} // namespace ODI

@@ -160,7 +160,7 @@ namespace ODI {
             D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
             D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
             MAX_DESCRIPTOR_COUNT);
-
+        m_currentDescriptorTopIndex = 0;
     }
 
     D3D12RHIContext::D3D12RHIContext() {
@@ -447,10 +447,15 @@ namespace ODI {
         DML_BINDING_TABLE_DESC tableDesc =
         {
             currOnnxInfo.dmlOpInitializer.Get(),
-            m_dmlDescriptorHeap->GetCpuHandle(currOnnxInfo.descriptorCPUOffset), // TODO: 
-            m_dmlDescriptorHeap->GetGpuHandle(currOnnxInfo.descriptorGPUOffset),
+            //m_dmlDescriptorHeap->GetCpuHandle(currOnnxInfo.descriptorCPUOffset), // TODO: 
+            //m_dmlDescriptorHeap->GetGpuHandle(currOnnxInfo.descriptorGPUOffset),
+            m_dmlDescriptorHeap->GetCpuHandle(m_currentDescriptorTopIndex),
+            m_dmlDescriptorHeap->GetGpuHandle(m_currentDescriptorTopIndex),
             initBindingProps.RequiredDescriptorCount
         };
+
+        m_currentDescriptorTopIndex += initBindingProps.RequiredDescriptorCount;
+
         m_dmlDevice->CreateBindingTable(&tableDesc, IID_PPV_ARGS(&initBindingTable));
 
 

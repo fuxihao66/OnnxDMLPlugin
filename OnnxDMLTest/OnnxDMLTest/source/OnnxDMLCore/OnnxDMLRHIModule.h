@@ -7,8 +7,8 @@ namespace ODI{
     struct ModelInfo {
         unsigned int                                        modelInputNum;
         unsigned int                                        modelOutputNum;
-        unsigned int                                        descriptorCPUOffset;
-        unsigned int                                        descriptorGPUOffset;
+        /*unsigned int                                        descriptorCPUOffset;
+        unsigned int                                        descriptorGPUOffset;*/
         std::vector<DML_BINDING_DESC>                       inputBindings;
         Microsoft::WRL::ComPtr<IDMLCompiledOperator>        dmlGraph;
         Microsoft::WRL::ComPtr<IDMLOperatorInitializer>     dmlOpInitializer;
@@ -22,19 +22,55 @@ namespace ODI{
     };
 
     class DescriptorHeapWrapper {
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_pHeap;
-        D3D12_DESCRIPTOR_HEAP_DESC                      m_desc;
-        D3D12_CPU_DESCRIPTOR_HANDLE                     m_hCPU;
-        D3D12_GPU_DESCRIPTOR_HANDLE                     m_hGPU;
-        uint32_t                                        m_increment;
+    private:
+        void Create(
+            ID3D12Device* pDevice,
+            const D3D12_DESCRIPTOR_HEAP_DESC* pDesc)
+        {
+            assert(pDesc != nullptr);
+
+            m_desc = *pDesc;
+            m_increment = pDevice->GetDescriptorHandleIncrementSize(pDesc->Type);
+
+            if (pDesc->NumDescriptors == 0)
+            {
+                m_pHeap.Reset();
+                m_hCPU.ptr = 0;
+                m_hGPU.ptr = 0;
+            }
+            else
+            {
+                pDevice->CreateDescriptorHeap(
+                    pDesc,
+                    IID_PPV_ARGS(m_pHeap.ReleaseAndGetAddressOf()));
+
+                m_hCPU = m_pHeap->GetCPUDescriptorHandleForHeapStart();
+
+                if (pDesc->Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE)
+                    m_hGPU = m_pHeap->GetGPUDescriptorHandleForHeapStart();
+
+            }
+        }
 
     public:
         DescriptorHeapWrapper(
             _In_ ID3D12Device* device,
             D3D12_DESCRIPTOR_HEAP_TYPE type,
             D3D12_DESCRIPTOR_HEAP_FLAGS flags,
-            size_t count) {
+            size_t count) :
+            m_desc{},
+            m_hCPU{},
+            m_hGPU{},
+            m_increment(0)
+        {
+            if (count > UINT32_MAX)
+                throw std::exception("Too many descriptors");
 
+            D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+            desc.Flags = flags;
+            desc.NumDescriptors = static_cast<UINT>(count);
+            desc.Type = type;
+            Create(device, &desc);
         }
         ID3D12DescriptorHeap* Heap() {
             return m_pHeap.Get();
@@ -64,6 +100,12 @@ namespace ODI{
             handle.ptr = m_hGPU.ptr + UINT64(index) * UINT64(m_increment);
             return handle;
         }
+    private:
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_pHeap;
+        D3D12_DESCRIPTOR_HEAP_DESC                      m_desc;
+        D3D12_CPU_DESCRIPTOR_HANDLE                     m_hCPU;
+        D3D12_GPU_DESCRIPTOR_HANDLE                     m_hGPU;
+        uint32_t                                        m_increment;
     };
 
 
@@ -89,6 +131,7 @@ namespace ODI{
         std::unique_ptr<DescriptorHeapWrapper>        m_dmlDescriptorHeap;
         
         std::unordered_map<std::string, ModelInfo>      m_modelNameToResourceInfo; // model info (for supporting different models)
+        UINT                                            m_currentDescriptorTopIndex;
     private:// only needed for debug
         D3D_FEATURE_LEVEL m_d3dMinFeatureLevel;
         DWORD                                               m_dxgiFactoryFlags;

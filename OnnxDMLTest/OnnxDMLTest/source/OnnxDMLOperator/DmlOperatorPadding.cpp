@@ -4,7 +4,7 @@
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorPadding// : public DmlOperator, public PaddingHelper
@@ -117,4 +117,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Pad, DmlOperatorPadding);
 // DML_OP_DEFINE_CREATION_FUNCTION(Pad11, VersionedKernel<DmlOperatorPadding, 11>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Pad13, VersionedKernel<DmlOperatorPadding, 13>);
 
-} // namespace Dml
+} // namespace ODI

@@ -23,6 +23,18 @@
     <ClCompile Include="..\Main.cpp" />
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.cpp" />
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorActivation.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorCast.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConcat.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConstant.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConvolution.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorElementWise.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorGather.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorInstanceNormalization.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorPadding.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorResize.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorSlice.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -37,18 +49,6 @@
     <ClInclude Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.h" />
     <ClInclude Include="source\OnnxDMLCore\OnnxDMLRHIModule.h" />
     <ClInclude Include="source\OnnxDMLCore\OperatorRegistration.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorActivation.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorCast.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConcat.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConstant.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConvolution.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorElementWise.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorGather.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorInstanceNormalization.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorPadding.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorResize.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorSlice.h" />
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.h" />
     <ClInclude Include="source\thirdParty\jpeg_decoder.h" />
     <ClInclude Include="source\thirdParty\tiny_jpeg.h" />
   </ItemGroup>

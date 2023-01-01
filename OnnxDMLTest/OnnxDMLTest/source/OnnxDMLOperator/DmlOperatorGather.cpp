@@ -6,7 +6,7 @@
 #include <vector>
 
 
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorGather 
@@ -128,4 +128,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Gather, DmlOperatorGather);
 // DML_OP_DEFINE_CREATION_FUNCTION(GatherElements, DmlOperatorGatherElements);
 // DML_OP_DEFINE_CREATION_FUNCTION(GatherND, DmlOperatorGatherNd);
 
-} // namespace Dml
+} // namespace ODI

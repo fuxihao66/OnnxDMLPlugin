@@ -3,7 +3,7 @@
 
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorInstanceNormalization
@@ -57,4 +57,4 @@ private:
 DML_OP_DEFINE_CREATION_FUNCTION(InstanceNormalization, DmlOperatorInstanceNormalization);
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedInstanceNormalization, DmlOperatorInstanceNormalization);
 
-} // namespace Dml
+} // namespace ODI

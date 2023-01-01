@@ -1,6 +1,6 @@
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 class DmlOperatorUnsqueeze
 {
@@ -60,4 +60,4 @@ private:
 
 DML_OP_DEFINE_CREATION_FUNCTION(Unsqueeze, DmlOperatorUnsqueeze);
 
-} // namespace Dml
+} // namespace ODI

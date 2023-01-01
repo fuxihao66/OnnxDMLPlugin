@@ -4,7 +4,7 @@
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorCast// : public DmlOperator
@@ -53,4 +53,4 @@ private:
 DML_OP_DEFINE_CREATION_FUNCTION(Cast, DmlOperatorCast);
 DML_OP_DEFINE_CREATION_FUNCTION(CastLike15, DmlOperatorCast);
 
-} // namespace Dml
+} // namespace ODI

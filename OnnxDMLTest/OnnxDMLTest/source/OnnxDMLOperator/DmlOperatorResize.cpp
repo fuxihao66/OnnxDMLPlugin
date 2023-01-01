@@ -4,7 +4,7 @@
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-//namespace Dml
+//namespace ODI
 //{
 //
 //constexpr NameAndIndex coordinateTransformationModes[] =
@@ -347,12 +347,12 @@
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample9, VersionedKernel<DmlOperatorResize, 9>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample10, VersionedKernel<DmlOperatorResize, 10>);
 
-// } // namespace Dml
+// } // namespace ODI
 
 
 // old version
 // TODO: need DML_RESAMPLE2_OPERATOR_DESC for better implementation
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorResize //: public DmlOperator, public ResizeHelper
@@ -451,4 +451,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Upsample, DmlOperatorResize);
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample7, VersionedKernel<DmlOperatorResize, 7>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample9, VersionedKernel<DmlOperatorResize, 9>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Upsample10, VersionedKernel<DmlOperatorResize, 10>);
-} // namespace Dml
+} // namespace ODI

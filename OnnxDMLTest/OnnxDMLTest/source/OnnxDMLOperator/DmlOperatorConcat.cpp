@@ -3,7 +3,7 @@
 
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
-namespace Dml
+namespace ODI
 {
 
 
@@ -52,4 +52,4 @@ private:
 
 DML_OP_DEFINE_CREATION_FUNCTION(Concat, DmlOperatorConcat);
 
-} // namespace Dml
+} // namespace ODI

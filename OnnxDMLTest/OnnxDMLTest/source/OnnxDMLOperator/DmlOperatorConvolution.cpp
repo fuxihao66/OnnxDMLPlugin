@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 // modified by fuxihao, 10/7/2022
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
-
-namespace Dml
+namespace ODI
 {
 
 class DmlOperatorConvolution //: public DmlOperator, public ConvolutionHelperBase
@@ -150,4 +150,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Conv, DmlOperatorConvolution);
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedConvTranspose,             DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_BACKWARD>);
 // DML_OP_DEFINE_CREATION_FUNCTION(ConvTransposeWithDynamicPads,   DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_BACKWARD, true>);
 
-} // namespace Dml
+} // namespace ODI

@@ -24,6 +24,42 @@
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorActivation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorCast.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConcat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConstant.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConvolution.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorElementWise.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorGather.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorInstanceNormalization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorPadding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorResize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorSlice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -54,42 +90,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\OnnxDMLCore\OperatorRegistration.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorActivation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorCast.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConcat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConstant.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorConvolution.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorElementWise.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorGather.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorInstanceNormalization.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorPadding.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorResize.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorSlice.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\thirdParty\jpeg_decoder.h">

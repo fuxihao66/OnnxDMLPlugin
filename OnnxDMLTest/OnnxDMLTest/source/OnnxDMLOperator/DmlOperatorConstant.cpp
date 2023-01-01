@@ -4,7 +4,7 @@
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 // TODO: will be implemented later
 // class DmlOperatorConstantOfShape : public DmlOperator, public ConstantOfShapeHelper
@@ -90,4 +90,4 @@ private:
 // DML_OP_DEFINE_CREATION_FUNCTION(ConstantOfShape, DmlOperatorConstantOfShape);
 DML_OP_DEFINE_CREATION_FUNCTION(Constant, DmlOperatorConstant);
 
-} // namespace Dml
+} // namespace ODI

@@ -3,21 +3,21 @@
 // onnxruntime\core\providers\dml\DmlExecutionProvider\src\Operators\OperatorRegistration.cpp
 #include "OperatorRegistration.h"
 
-
+namespace ODI{
 // dml define 
 
-#include "../OnnxDMLOperator/DmlOperatorActivation.h"
-#include "../OnnxDMLOperator/DmlOperatorCast.h"
-#include "../OnnxDMLOperator/DmlOperatorConcat.h"
-#include "../OnnxDMLOperator/DmlOperatorConstant.h"
-#include "../OnnxDMLOperator/DmlOperatorConvolution.h"
-#include "../OnnxDMLOperator/DmlOperatorElementWise.h"
-#include "../OnnxDMLOperator/DmlOperatorGather.h"
-#include "../OnnxDMLOperator/DmlOperatorInstanceNormalization.h"
-#include "../OnnxDMLOperator/DmlOperatorPadding.h"
-#include "../OnnxDMLOperator/DmlOperatorResize.h"
-#include "../OnnxDMLOperator/DmlOperatorSlice.h"
-#include "../OnnxDMLOperator/DmlOperatorUnsqueeze.h"
+//#include "../OnnxDMLOperator/DmlOperatorActivation.h"
+//#include "../OnnxDMLOperator/DmlOperatorCast.h"
+//#include "../OnnxDMLOperator/DmlOperatorConcat.h"
+//#include "../OnnxDMLOperator/DmlOperatorConstant.h"
+//#include "../OnnxDMLOperator/DmlOperatorConvolution.h"
+//#include "../OnnxDMLOperator/DmlOperatorElementWise.h"
+//#include "../OnnxDMLOperator/DmlOperatorGather.h"
+//#include "../OnnxDMLOperator/DmlOperatorInstanceNormalization.h"
+//#include "../OnnxDMLOperator/DmlOperatorPadding.h"
+//#include "../OnnxDMLOperator/DmlOperatorResize.h"
+//#include "../OnnxDMLOperator/DmlOperatorSlice.h"
+//#include "../OnnxDMLOperator/DmlOperatorUnsqueeze.h"
 
 
 // DML_OP_EXTERN_CREATION_FUNCTION(Copy); // for Unsqueeze
@@ -43,9 +43,9 @@ DML_OP_EXTERN_CREATION_FUNCTION(Upsample);
 // DML_OP_EXTERN_CREATION_FUNCTION(Upsample9);
 // DML_OP_EXTERN_CREATION_FUNCTION(Upsample10);
 DML_OP_EXTERN_CREATION_FUNCTION(Cast);
-DML_OP_EXTERN_CREATION_FUNCTION(Floor);
+//DML_OP_EXTERN_CREATION_FUNCTION(Floor);
 DML_OP_EXTERN_CREATION_FUNCTION(Constant); // not implemented in ORT
-DML_OP_EXTERN_CREATION_FUNCTION(Shape);    // not implemented in ORT, use constant to implement shape
+// DML_OP_EXTERN_CREATION_FUNCTION(Shape);    // not implemented in ORT, use constant to implement shape
 DML_OP_EXTERN_CREATION_FUNCTION(Unsqueeze);  
 // or combine operator?
 
@@ -69,7 +69,7 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
         //{REG_INFO_VER(Pad, 11, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
         //{REG_INFO_VER(Pad, 13, )}, // https://microsoft.visualstudio.com/OS/_workitems/edit/26007728
         {REG_INFO(Constant)},
-        {REG_INFO(Shape)},
+        // {REG_INFO(Shape)},
         {REG_INFO(Gather)},
 
         // Data reorganization that merely changes the dimensions while keeping the data identical.
@@ -79,7 +79,7 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
         {REG_INFO_VER(Unsqueeze, 11)},
         {REG_INFO_VER(Unsqueeze, 13)},*/
         // Elementwise
-        {REG_INFO(Floor)},
+        //{REG_INFO(Floor)},
         {REG_INFO(Add)},
         {REG_INFO(Mul)},
         {REG_INFO(Div)},
@@ -99,4 +99,6 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
 dml::Expression CreateExpression(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
 {
     return g_operatorRegistrationMap[node.opType](expressionMap, node, graph, opsetVersion);
+}
+
 }

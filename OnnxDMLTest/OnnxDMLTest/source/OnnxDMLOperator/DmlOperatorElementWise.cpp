@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
+namespace ODI
 {
 
 // bool AreAllStridesIdentical(gsl::span<const TensorDesc> tensorDescs)
@@ -756,4 +757,4 @@ DML_OP_DEFINE_CREATION_FUNCTION(Div,              DmlOperatorElementwiseBinary<D
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedAdd,         DmlOperatorElementwiseBinary<DML_ELEMENT_WISE_ADD1_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedSum,         DmlOperatorElementwiseBinaryLoop<DML_ELEMENT_WISE_ADD1_OPERATOR_DESC>);
 
-} // namespace Dml
+} // namespace ODI

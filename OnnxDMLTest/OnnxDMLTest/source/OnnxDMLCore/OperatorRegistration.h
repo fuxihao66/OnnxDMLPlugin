@@ -15,12 +15,9 @@
 
 
 #define DML_OP_DEFINE_CREATION_FUNCTION(operatorName, ...)                                                                               \
-    \
 extern dml::Expression __stdcall Create##operatorName(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion) \
-    \
 {                                                                                                                                   \
         using T = __VA_ARGS__;                                                                                                           \
         T op(expressionMap, node, graph, opsetVersion); \
         return op.Create();\
-    \
 }
