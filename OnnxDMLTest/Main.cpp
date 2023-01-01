@@ -4,6 +4,7 @@
 
 #include "helper/pch.h"
 #include "Common/Float16Compressor.h"
+#define TJE_IMPLEMENTATION
 #include "thirdParty/tiny_jpeg.h"
 #include "thirdParty/jpeg_decoder.h"
 #include "OnnxDMLCore/OnnxDMLRHIModule.h"

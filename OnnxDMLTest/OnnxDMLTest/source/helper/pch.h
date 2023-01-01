@@ -80,7 +80,7 @@
 #include "DirectMLX.h"
 
 
-#include "DescriptorHeap.h"
+//#include "DescriptorHeap.h"
 
 #include "../Common/Common.h"
 #include "../Common/OnnxParser.h"

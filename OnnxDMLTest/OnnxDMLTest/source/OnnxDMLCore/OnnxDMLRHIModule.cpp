@@ -4,11 +4,11 @@
 #include "Common/OnnxParser.h"
 #pragma warning(disable : 4238)
 
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+
 namespace ODI {
-    D3D12RHIContext::D3D12RHIContext() {
-        CreateDeviceResources();
-        CreateDMLResources();
-    }
 
     // in rhi thread
     void D3D12RHIContext::CreateDeviceResources() { // no need in unreal
@@ -155,13 +155,34 @@ namespace ODI {
 
 
 
-        m_dmlDescriptorHeap = std::make_unique<DirectX::DescriptorHeap>(
+        m_dmlDescriptorHeap = std::make_unique<DescriptorHeapWrapper>(
             m_d3dDevice.Get(),
             D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
             D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
             MAX_DESCRIPTOR_COUNT);
 
     }
+
+    D3D12RHIContext::D3D12RHIContext() {
+        CreateDeviceResources();
+        CreateDMLResources();
+    }
+
+    D3D12RHIContext::~D3D12RHIContext() {
+        m_dmlDevice.Reset();
+        m_dmlCommandRecorder.Reset();
+        //Microsoft::WRL::ComPtr<DirectX::DescriptorHeap>        m_dmlDescriptorHeap;
+        m_dmlDescriptorHeap.reset();
+
+        m_d3dDevice.Reset();
+        m_commandQueue.Reset();
+        m_commandList.Reset();
+        m_commandAllocator.Reset();
+        m_dxgiFactory.Reset();
+        m_fence.Reset();
+    }
+
+    
     void D3D12RHIContext::InitializeNewModel(const std::wstring& path_to_onnx, const std::string& modelName) {
         m_modelNameToResourceInfo[modelName] = ModelInfo();
 

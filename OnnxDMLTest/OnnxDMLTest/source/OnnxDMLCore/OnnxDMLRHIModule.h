@@ -21,6 +21,51 @@ namespace ODI{
         {}
     };
 
+    class DescriptorHeapWrapper {
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>    m_pHeap;
+        D3D12_DESCRIPTOR_HEAP_DESC                      m_desc;
+        D3D12_CPU_DESCRIPTOR_HANDLE                     m_hCPU;
+        D3D12_GPU_DESCRIPTOR_HANDLE                     m_hGPU;
+        uint32_t                                        m_increment;
+
+    public:
+        DescriptorHeapWrapper(
+            _In_ ID3D12Device* device,
+            D3D12_DESCRIPTOR_HEAP_TYPE type,
+            D3D12_DESCRIPTOR_HEAP_FLAGS flags,
+            size_t count) {
+
+        }
+        ID3D12DescriptorHeap* Heap() {
+            return m_pHeap.Get();
+        }
+        D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle(_In_ size_t index) const
+        {
+            assert(m_pHeap != nullptr);
+            if (index >= m_desc.NumDescriptors)
+            {
+                throw std::out_of_range("D3DX12_CPU_DESCRIPTOR_HANDLE");
+            }
+
+            D3D12_CPU_DESCRIPTOR_HANDLE handle;
+            handle.ptr = static_cast<SIZE_T>(m_hCPU.ptr + UINT64(index) * UINT64(m_increment));
+            return handle;
+        }
+        D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(_In_ size_t index) const
+        {
+            assert(m_pHeap != nullptr);
+            if (index >= m_desc.NumDescriptors)
+            {
+                throw std::out_of_range("D3DX12_GPU_DESCRIPTOR_HANDLE");
+            }
+            assert(m_desc.Flags & D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
+            D3D12_GPU_DESCRIPTOR_HANDLE handle;
+            handle.ptr = m_hGPU.ptr + UINT64(index) * UINT64(m_increment);
+            return handle;
+        }
+    };
+
 
     class D3D12RHIContext{
     public:
@@ -41,7 +86,7 @@ namespace ODI{
         Microsoft::WRL::ComPtr<IDMLDevice>              m_dmlDevice;
         Microsoft::WRL::ComPtr<IDMLCommandRecorder>     m_dmlCommandRecorder;
         //Microsoft::WRL::ComPtr<DirectX::DescriptorHeap>        m_dmlDescriptorHeap;
-        std::unique_ptr<DirectX::DescriptorHeap>        m_dmlDescriptorHeap;
+        std::unique_ptr<DescriptorHeapWrapper>        m_dmlDescriptorHeap;
         
         std::unordered_map<std::string, ModelInfo>      m_modelNameToResourceInfo; // model info (for supporting different models)
     private:// only needed for debug
