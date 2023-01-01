@@ -92,7 +92,7 @@ namespace Dml
 //     opDesc.FusedActivation = fusedActivation;
 // }
 
-template <typename TOperatorType, typename TOperatorDesc>
+template <DML_OPERATOR_TYPE TOperatorType, typename TOperatorDesc>
 class DmlOperatorElementwiseBinary 
 {
 public:
@@ -100,12 +100,12 @@ public:
                                  ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 2)
-            throw std::exception("Binary operator must have 2 parameters!")
+            throw std::exception("Binary operator must have 2 parameters!");
 
         m_input0 = expressionMap[node.inputNames[0]];
         m_input1 = expressionMap[node.inputNames[1]];
 
-        // TODO: ONLY ADD supports fused activation
+        // TODO: ONLY ADD operator supports fused activation
         // std::optional<ActivationOperatorDesc> fusedActivation = FusionHelpers::TryGetFusedActivationDesc(kernelInfo);
         // DML_OPERATOR_DESC fusedActivationDmlDesc = fusedActivation ? fusedActivation->GetDmlDesc() : DML_OPERATOR_DESC();
 
@@ -119,7 +119,7 @@ public:
 
     }
     dml::Expression Create(){
-        return detail::ElementWiseBinary<TOperatorType, TOperatorDesc>(m_input0, m_input1);
+        return dml::detail::ElementWiseBinary<TOperatorType, TOperatorDesc>(m_input0, m_input1);
     }
 private:
     dml::Expression m_input0;

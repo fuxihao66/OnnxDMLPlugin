@@ -21,10 +21,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Main.cpp" />
-    <ClCompile Include="source\OnnxDMLCore\AddDmlPassFromOnnx.cpp" />
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.cpp" />
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp" />
-    <ClCompile Include="source\OnnxDMLUtility\OperatorUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -149,12 +147,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>.\source</AdditionalIncludeDirectories>
+      <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

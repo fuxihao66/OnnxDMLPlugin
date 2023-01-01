@@ -3,6 +3,8 @@
 
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
+#include <vector>
+
 
 namespace Dml
 {
@@ -12,7 +14,6 @@ class DmlOperatorGather
 public:
     DmlOperatorGather(std::map<std::string, dml::Expression>& expressionMap, 
                       ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
-    
     {
         if (node.inputNames.size() != 2)
             throw std::exception("Gather expects 2 inputs!");
@@ -23,10 +24,9 @@ public:
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         dml::TensorDimensions indicesShape = m_indices.GetOutputDesc().sizes;
         
-
         int tempaxis;
         {
-            std:vector<char> temp;
+            std::vector<char> temp;
             bool hasAxis = node.GetAttribute("axis", ONNX_PARSER::AttributeType::INT, temp);
             if (hasAxis){
                 memcpy(&tempaxis, temp.data(), temp.size());
@@ -34,10 +34,10 @@ public:
             else
                 tempaxis = 0;
         }
-        if (tempAxis < 0)
-            axis = inputShape.size() + tempAxis;
+        if (tempaxis < 0)
+            axis = inputShape.size() + tempaxis;
         else
-            axis = tempAxis;
+            axis = tempaxis;
 
         indexDimensions = indicesShape.size(); // TODO: need unit test
     }

@@ -4,6 +4,23 @@
 namespace ODI{
 
 #define MAX_DESCRIPTOR_COUNT 100000
+    struct ModelInfo {
+        unsigned int                                        modelInputNum;
+        unsigned int                                        modelOutputNum;
+        unsigned int                                        descriptorCPUOffset;
+        unsigned int                                        descriptorGPUOffset;
+        std::vector<DML_BINDING_DESC>                       inputBindings;
+        Microsoft::WRL::ComPtr<IDMLCompiledOperator>        dmlGraph;
+        Microsoft::WRL::ComPtr<IDMLOperatorInitializer>     dmlOpInitializer;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              modelPersistentResource;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              modelTemporaryResource;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              modelOperatorWeights;
+        Microsoft::WRL::ComPtr<IDMLBindingTable>            dmlBindingTable;
+        ModelInfo() : modelInputNum(0), modelOutputNum(0), dmlGraph(nullptr), dmlOpInitializer(nullptr),
+            modelPersistentResource(nullptr), modelTemporaryResource(nullptr), modelOperatorWeights(nullptr), dmlBindingTable(nullptr)
+        {}
+    };
+
 
     class D3D12RHIContext{
     public:
@@ -16,8 +33,8 @@ namespace ODI{
     public:
         void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false); // only used for debug
         void ForceCPUSync(); // only used for debug
-        void CPUReadBack(Microsoft::WRL::ComPtr<ID3D12Resource> resourcePointer, std::vector<float>& outputData, unsigned int outputSizeInByte);
-        void CopyForReadBack(Microsoft::WRL::ComPtr<ID3D12Resource>& readbackInput, Microsoft::WRL::ComPtr<ID3D12Resource>& readbackOutput);
+        void CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte);
+        void CopyForReadBack(ID3D12Resource* readbackInput, ID3D12Resource* readbackOutput);
         void InitializeNewModel(const std::wstring& path_to_onnx, const std::string& modelName);
         void RunDMLInfer(const std::map<std::string, ID3D12Resource*> inputs, ID3D12Resource* outputs, const std::string& modelName);
     private:
@@ -43,22 +60,7 @@ namespace ODI{
 
     };
 
-    struct ModelInfo{
-        unsigned int                                        modelInputNum;
-        unsigned int                                        modelOutputNum;
-        unsigned int                                        descriptorCPUOffset;
-        unsigned int                                        descriptorGPUOffset;
-        std::vector<DML_BINDING_DESC>                       inputBindings;
-        Microsoft::WRL::ComPtr<IDMLCompiledOperator>        dmlGraph;
-        Microsoft::WRL::ComPtr<IDMLOperatorInitializer>     dmlOpInitializer;
-        Microsoft::WRL::ComPtr<ID3D12Resource>              modelPersistentResource;
-        Microsoft::WRL::ComPtr<ID3D12Resource>              modelTemporaryResource;
-        Microsoft::WRL::ComPtr<ID3D12Resource>              modelOperatorWeights;
-        Microsoft::WRL::ComPtr<IDMLBindingTable>            dmlBindingTable;
-        ModelInfo() : modelInputNum(0), modelOutputNum(0), dmlGraph(nullptr), dmlOpInitializer(nullptr), 
-            modelPersistentResource(nullptr), modelTemporaryResource(nullptr), modelOperatorWeights(nullptr), dmlBindingTable(nullptr)
-        {}
-    };
+    
 
     // in rhi thread
 

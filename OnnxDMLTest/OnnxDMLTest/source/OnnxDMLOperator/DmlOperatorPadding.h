@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -15,7 +16,7 @@ public:
         assert((opsetVersion >= 2 && opsetVersion < 11 && inputCount == 1)
                              || (opsetVersion >= 11 && inputCount >= 2 && inputCount <= 3));
         m_input = expressionMap[node.inputNames[0]];
-        Dimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         
         std::vector<char> tempAttri;
         { 

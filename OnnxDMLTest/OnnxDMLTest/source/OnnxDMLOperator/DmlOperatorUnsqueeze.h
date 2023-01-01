@@ -26,20 +26,23 @@ public:
             axis.resize(temp.size() / 4);
             memcpy(axis.data(), temp.data(), temp.size());
         }
-        int origAxisSize = axis.size();
+        int AxisSize = axis.size();
 
-        axis.push_back(origAxisSize + inputShape.size());
-
+        axis.push_back(AxisSize + inputShape.size());
+                    
         int index = 0;
         for (int i = 0; i < axis[0]; i++){
             outputSizes.push_back(inputShape[index++]);
         }
-        for (int i = 0; i < origAxisSize; i++){
+        for (int i = 0; i < AxisSize; i++){
             outputSizes.push_back(1);
-            for (int i = axis[i]; i < axis[i+1]; i++){
+            for (int j = axis[i] + 1; j < axis[i+1]; j++){
                 outputSizes.push_back(inputShape[index++]);
             }
         }
+        /*if (axis[AxisSize - 1] == AxisSize + inputShape.size() - 1 && AxisSize > 1)
+            outputSizes.push_back(1);*/
+
     }
 
     dml::Expression Create(){

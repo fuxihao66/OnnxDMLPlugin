@@ -27,15 +27,18 @@ public:
 
         if (node.inputNames.size() == 2){
             // hasBias = false;
-            bias = std::nullopt;
+            m_bias = std::nullopt;
         }
         else{
             auto& biasName = node.inputNames[2];
-            bias = expressionMap[biasName];
+            m_bias = std::optional(expressionMap[biasName]);
         }
         // attribute
         std::vector<char> tempAttri;
-        
+        std::vector<int> paddingsAttri;
+        std::vector<int> stridesAttri;
+        std::vector<int> dialationAttri;
+
         { 
         //auto_pad must be either NOTSET, SAME_UPPER, SAME_LOWER or VALID.
             bool hasAutoPad = node.GetAttribute("auto_pad", ONNX_PARSER::AttributeType::STRING, tempAttri);
@@ -58,46 +61,56 @@ public:
             }
         }
 
-        auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
+        auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec) {
             bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS, tempAttri);
-            if (hasAttri){
+            if (hasAttri) {
                 attriVec.resize(tempAttri.size() / 4);
                 memcpy(attriVec.data(), tempAttri.data(), tempAttri.size());
             }
-            else{
+            else {
                 assert(false);
             }
-        }
+        };
 
-        getIntsAttriAndCopy("dilations", dialations);
+        getIntsAttriAndCopy("dilations", dialationAttri);
         // getIntsAttriAndCopy("kernel_shape", kernelShape);// no necessity
-        getIntsAttriAndCopy("pads", paddings);
-        getIntsAttriAndCopy("strides", strides);
+        getIntsAttriAndCopy("pads", paddingsAttri);
+        getIntsAttriAndCopy("strides", stridesAttri);
         
-        outputPaddings.resize(paddings.size() / 2);
-        startPaddings.resize(paddings.size() / 2);
-        endPaddings.resize(paddings.size() / 2);
+        outputPaddings.resize(paddingsAttri.size() / 2);
+        startPaddings.resize(paddingsAttri.size() / 2);
+        endPaddings.resize(paddingsAttri.size() / 2);
 
         std::fill(outputPaddings.begin(), outputPaddings.end(), 0);
 
         int index = 0;
-        for (int i = 0; i < paddings.size() / 2; i++){
-            startPaddings[i] = paddings[index++];
-            endPaddings[i] = paddings[index++];
+        for (int i = 0; i < paddingsAttri.size() / 2; i++){
+            startPaddings[i] = paddingsAttri[index++];
+        }
+        for (int i = 0; i < paddingsAttri.size() / 2; i++) {
+            endPaddings[i] = paddingsAttri[index++];
+        }
+        
+        dialations.resize(dialationAttri.size());
+        for (int i = 0; i < dialationAttri.size(); i++) {
+            dialations[i] = dialationAttri[i];
         }
 
-
+        strides.resize(stridesAttri.size());
+        for (int i = 0; i < stridesAttri.size(); i++) {
+            strides[i] = stridesAttri[i];
+        }
     }
 
     dml::Expression Create(){
         return dml::ConvolutionBuilder(m_input, m_weight, m_bias)
-                    .Mode()
+                    //.Mode()
                     .Direction(DML_CONVOLUTION_DIRECTION_FORWARD) // TODO: Add reverse direction to support transposedconv
                     .Strides(strides)
                     .Dilations(dialations)
                     .StartPadding(startPaddings)
                     .EndPadding(endPaddings)
-                    .OutputPadding(outputPaddings)
+                    //.OutputPadding(outputPaddings) // pad to the conv output
                     .GroupCount(group)
                     //.FusedActivation(dml::FusedActivation::Relu())
                     .Build();
@@ -105,12 +118,12 @@ public:
 private:
     // bool hasBias = true;
     std::string autoPad;
-    std::vector<int> dialations;
+    std::vector<uint32_t> dialations;
     // std::vector<int> kernelShape;
-    std::vector<int> startPaddings;
-    std::vector<int> endPaddings;
-    std::vector<int> outputPaddings;
-    std::vector<int> strides;
+    std::vector<uint32_t> startPaddings;
+    std::vector<uint32_t> endPaddings;
+    std::vector<uint32_t> outputPaddings;
+    std::vector<uint32_t> strides;
     int group;
     dml::Expression m_input;
     dml::Expression m_weight;
@@ -129,7 +142,9 @@ private:
 //     }
 // };
 
-DML_OP_DEFINE_CREATION_FUNCTION(Conv,                           DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_FORWARD>);
+DML_OP_DEFINE_CREATION_FUNCTION(Conv, DmlOperatorConvolution);
+
+//DML_OP_DEFINE_CREATION_FUNCTION(Conv,                           DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_FORWARD>);
 // DML_OP_DEFINE_CREATION_FUNCTION(ConvTranspose,                  DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_BACKWARD>);
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedConv,                      DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_FORWARD>);
 // DML_OP_DEFINE_CREATION_FUNCTION(FusedConvTranspose,             DmlOperatorConvolutionTemplate<DML_CONVOLUTION_MODE_CROSS_CORRELATION, DML_CONVOLUTION_DIRECTION_BACKWARD>);

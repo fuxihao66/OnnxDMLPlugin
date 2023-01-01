@@ -3,7 +3,6 @@
 
 //#include "precomp.h"
 #include "../OnnxDMLCore/OperatorRegistration.h"
-
 namespace Dml
 {
 
@@ -25,7 +24,7 @@ public:
 
         int tempaxis;
         {
-            std:vector<char> temp;
+            std::vector<char> temp;
             bool hasAxis = node.GetAttribute("axis", ONNX_PARSER::AttributeType::INT, temp);
             if (hasAxis){
                 memcpy(&tempaxis, temp.data(), temp.size());
@@ -44,10 +43,10 @@ public:
     }
 
     dml::Expression Create(){
-        dml::Join(m_inputs, axis);
+        return dml::Join(m_inputs, axis);
     }
 private:
-    std::vector<dml:Expression> m_inputs;
+    std::vector<dml::Expression> m_inputs;
     uint32_t axis;
 };
 

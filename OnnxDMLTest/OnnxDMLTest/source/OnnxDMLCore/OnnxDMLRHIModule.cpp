@@ -2,6 +2,7 @@
 #include "OnnxDMLRHIModule.h"
 
 #include "Common/OnnxParser.h"
+#pragma warning(disable : 4238)
 
 namespace ODI {
     D3D12RHIContext::D3D12RHIContext() {
@@ -94,7 +95,7 @@ namespace ODI {
             _countof(s_featureLevels), s_featureLevels, D3D_FEATURE_LEVEL_11_0
         };
 
-        HRESULT hr = m_d3dDevice->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &featLevels, sizeof(featLevels));
+        hr = m_d3dDevice->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &featLevels, sizeof(featLevels));
         if (SUCCEEDED(hr))
         {
             m_d3dFeatureLevel = featLevels.MaxSupportedFeatureLevel;
@@ -137,9 +138,6 @@ namespace ODI {
         }
     }
     void D3D12RHIContext::CreateDMLResources() {
-
-
-
         // initialize once
         if (m_dmlDevice == nullptr) {
             DMLCreateDevice(m_d3dDevice.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&m_dmlDevice));
@@ -179,7 +177,7 @@ namespace ODI {
         unsigned int opsetVersion;
 
         {
-            ONNX_PARSER::OnnxParser* parser = new ONNX_PARSER::OnnxParser(L"D:/candy-9.onnx");
+            ONNX_PARSER::OnnxParser* parser = new ONNX_PARSER::OnnxParser(path_to_onnx);
             graphInitializers = parser->GetGraphInitializers(); // error
             outputMap = parser->GetOutputs();
             inputMap = parser->GetInputs();
@@ -322,8 +320,8 @@ namespace ODI {
 
 
             // TODO: only support single output
-            if (modelOutputNum != 1);
-            throw std::exception("Only single output is supported.");
+            if (modelOutputNum != 1)
+                throw std::exception("Only single output is supported.");
 
             for (auto& outputPair : outputMap) {
                 auto& output = outputPair.second;
@@ -499,7 +497,7 @@ namespace ODI {
 
 
         int inputIndex = 0;
-        for (auto& input : modelInputs) {
+        for (auto& input : modelInputs) { // because std::map is sorted
             auto resourcePointer = input.second;
             auto bufferBindings = DML_BUFFER_BINDING{ resourcePointer };
             currOnnxInfo.inputBindings[inputIndex] = { DML_BINDING_TYPE_BUFFER, &bufferBindings };
@@ -572,27 +570,30 @@ namespace ODI {
 
     }
 
-    void D3D12RHIContext::CopyForReadBack(Microsoft::WRL::ComPtr<ID3D12Resource>& readbackInput, Microsoft::WRL::ComPtr<ID3D12Resource>& readbackOutput) {
+    void D3D12RHIContext::CopyForReadBack(ID3D12Resource* readbackInput, ID3D12Resource* readbackOutput) {
         {
             D3D12_RESOURCE_BARRIER outputBufferResourceBarrier
             {
                 CD3DX12_RESOURCE_BARRIER::Transition(
-                    readbackInput.Get(),
+                    readbackInput,
                     D3D12_RESOURCE_STATE_COMMON,
                     D3D12_RESOURCE_STATE_COPY_SOURCE)
             };
             m_commandList->ResourceBarrier(1, &outputBufferResourceBarrier);
         }
 
-        m_commandList->CopyResource(readbackOutput.Get(), readbackInput.Get());
+        m_commandList->CopyResource(readbackOutput, readbackInput);
     }
 
-    void D3D12RHIContext::CPUReadBack(Microsoft::WRL::ComPtr<ID3D12Resource> resourcePointer, std::vector<float>& outputData, unsigned int outputSizeInByte) {
+    void D3D12RHIContext::CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte) {
 
         D3D12_RANGE readbackBufferRange{ 0, outputSizeInByte };
         float* pReadbackBufferData{};
 
         resourcePointer->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData));
+
+        outputData.resize(outputSizeInByte / sizeof(uint16_t));
+
         memcpy(outputData.data(), pReadbackBufferData, outputSizeInByte);
         D3D12_RANGE emptyRange{ 0, 0 };
         resourcePointer->Unmap

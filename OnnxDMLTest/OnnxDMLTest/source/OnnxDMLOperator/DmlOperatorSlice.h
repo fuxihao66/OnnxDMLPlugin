@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -18,7 +19,7 @@ public:
                              || (opsetVersion >= 10 && inputCount >= 3 && inputCount <= 5));
 
         m_input = expressionMap[node.inputNames[0]];
-        Dimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
 
         std::vector<int> steps;
         std::vector<int> axes;
@@ -81,7 +82,7 @@ public:
             std::iota(axes.begin(), axes.end(), 0);
         }
         if (steps.empty()){
-            steps.resize(axes);
+            steps.resize(axes.size());
             std::fill(steps.begin(), steps.end(), 1);
         }
 
@@ -98,14 +99,14 @@ public:
             int axis = axes[i];
 
             // modify start and end
-            auto checkAndModifiyIfMinusOrOOB = [&](int& val){
-                if (val < 0){
+            auto checkAndModifiyIfMinusOrOOB = [&](int& val) {
+                if (val < 0) {
                     val = inputShape[axis] + val;
                 }
-                else if (val >= inputShape[axis]){
+                else if (val >= inputShape[axis]) {
                     val = inputShape[axis];
                 }
-            }
+            };
             
             checkAndModifiyIfMinusOrOOB(starts[axis]);
             checkAndModifiyIfMinusOrOOB(ends[axis]);

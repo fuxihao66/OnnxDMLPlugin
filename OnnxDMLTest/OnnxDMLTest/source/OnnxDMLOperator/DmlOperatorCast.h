@@ -23,7 +23,23 @@ public:
 
         auto& inputName = node.inputNames[0];
         m_input = expressionMap[inputName];
-        targetDataType = TensorType2DmlTensorType(node.outputInfo.tensorType);
+
+
+        { // data type
+            std::vector<char> tempAttri;
+            int toVal;
+            bool hasTo = node.GetAttribute("to", ONNX_PARSER::AttributeType::INT, tempAttri);
+            if (hasTo) {
+                memcpy(&toVal, tempAttri.data(), tempAttri.size());
+
+                targetDataType = static_cast<DML_TENSOR_DATA_TYPE>(ONNX_PARSER::OnnxTensorType2DmlTensorType(toVal));
+            }
+            else {
+                assert(false);
+            }
+        }
+
+        
     }
 
     dml::Expression Create(){

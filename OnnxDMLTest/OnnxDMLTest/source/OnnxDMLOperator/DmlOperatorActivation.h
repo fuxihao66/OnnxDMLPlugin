@@ -76,13 +76,14 @@ public:
             break;
         }
         case DML_OPERATOR_ACTIVATION_LEAKY_RELU:
+        {
             bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
             if (hasAlpha)
                 memcpy(&operatorDesc.leakyRelu.Alpha, attribVal.data(), attribVal.size());
             else
                 operatorDesc.leakyRelu.Alpha = 0.01f;
             break;
-
+        }
         // case DML_OPERATOR_ACTIVATION_LINEAR: // TODO: NOT USED
         //     bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
         //     if (hasAlpha)
@@ -95,12 +96,10 @@ public:
         //     else   
         //         operatorDesc.linear.Beta = 0.5f;
         //     break;
-
         // case DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS:  // TODO: NOT USED
         //     operatorDesc.parametricSoftplus.Alpha = ;
         //     operatorDesc.parametricSoftplus.Beta  = ;
         //     break;
-
         case DML_OPERATOR_ACTIVATION_SCALED_ELU:
         {
             bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
@@ -122,19 +121,21 @@ public:
         //     break;
 
         case DML_OPERATOR_ACTIVATION_SOFTPLUS:
-        
+        {
             operatorDesc.softplus.Steepness = 1.0f;
             break;
-
+        }
         case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU:
+        {    
             bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
             if (hasAlpha)
                 memcpy(&operatorDesc.thresholdedRelu.Alpha, attribVal.data(), attribVal.size());
             else
                 operatorDesc.thresholdedRelu.Alpha = 1.f;
             break;
-
+        }
         case DML_OPERATOR_ACTIVATION_SHRINK:
+        {
             bool hasBias = node.GetAttribute("bias", ONNX_PARSER::AttributeType::FLOAT, attribVal);
             if (hasBias)
                 memcpy(&operatorDesc.shrink.Bias, attribVal.data(), attribVal.size());
@@ -146,7 +147,7 @@ public:
             else   
                 operatorDesc.shrink.Threshold = 0.5f;
             break;
-
+        }
         case DML_OPERATOR_ACTIVATION_IDENTITY:
         case DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU:
         case DML_OPERATOR_ACTIVATION_RELU:
@@ -161,22 +162,22 @@ public:
             break;
         }
 
-        gsl::span<const uint32_t> outputSizes = m_outputTensorDescs[0].GetSizes();
+        //gsl::span<const uint32_t> outputSizes = m_outputTensorDescs[0].GetSizes();
         std::vector<DML_TENSOR_DESC> inputDescs;
         std::vector<DML_TENSOR_DESC> outputDescs;
 
         
 
         m_input = expressionMap[node.inputNames[0]];
-        detail::GraphBuilder* builder = m_input.Impl()->GetGraphBuilder();
+        dml::detail::GraphBuilder* builder = m_input.Impl()->GetGraphBuilder();
 
-        TensorDesc inputTensor = m_input.Impl()->GetOutputDesc();
-        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+        dml::TensorDesc inputTensor = m_input.Impl()->GetOutputDesc();
+        dml::TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
 
         if (operatorType == DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU)
         {
             *m_slope = expressionMap[node.inputNames[1]];
-            TensorDesc slopeTensor = m_slope->Impl()->GetOutputDesc();
+            dml::TensorDesc slopeTensor = m_slope->Impl()->GetOutputDesc();
 
             operatorDesc.parameterizedRelu.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
             operatorDesc.parameterizedRelu.SlopeTensor = slopeTensor.AsPtr<DML_TENSOR_DESC>();
@@ -193,19 +194,21 @@ public:
 
     }
     dml::Expression Create(){
-        detail::GraphBuilder* builder = m_input.Impl()->GetGraphBuilder(); 
+        dml::detail::GraphBuilder* builder = m_input.Impl()->GetGraphBuilder();
         
-        detail::NodeID node;
+        dml::detail::NodeID node;
         if (m_slope){
-            detail::NodeOutput* const inputs[] = { m_input.Impl(), m_slope->Impl() }; 
+            dml::detail::NodeOutput* const inputs[] = { m_input.Impl(), m_slope->Impl() };
             node = builder->CreateOperatorNode(operatorType, &operatorDesc, inputs);
         }
         else{
-            detail::NodeOutput* const inputs[] = { m_input.Impl() }; 
+            dml::detail::NodeOutput* const inputs[] = { m_input.Impl() };
             node = builder->CreateOperatorNode(operatorType, &operatorDesc, inputs);
         }
          
-        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, *operatorDesc.OutputTensor); 
+        dml::TensorDesc inputTensor = m_input.Impl()->GetOutputDesc();
+        dml::TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+        dml::detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
        
         return output;
     }

@@ -18,16 +18,10 @@
     <ClCompile Include="..\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\OnnxDMLCore\AddDmlPassFromOnnx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="source\OnnxDMLUtility\OperatorUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

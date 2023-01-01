@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
 namespace Dml
 {
@@ -17,7 +17,7 @@ public:
         m_bias = expressionMap[node.inputNames[2]];
         
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
-        dml::TensorDimensions weightShape = m_weight.GetOutputDesc().sizes;
+        weightShape = m_weight.GetOutputDesc().sizes;
         
         {
             std::vector<char> temp;
@@ -39,8 +39,8 @@ public:
     dml::Expression Create(){
 
         return dml::MeanVarianceNormalization(m_input, 
-                                              dml::Reinterpret(m_weight, TensorDimentions{1, weightShape[0], 1, 1}, nullopt), // reshape tensor from 1d to 4d
-                                              dml::Reinterpret(m_bias, TensorDimentions{1, weightShape[0], 1, 1}, nullopt),
+                                              std::optional(dml::Reinterpret(m_weight, dml::TensorDimensions{1, weightShape[0], 1, 1}, std::nullopt)), // reshape tensor from 1d to 4d
+                                              std::optional(dml::Reinterpret(m_bias, dml::TensorDimensions{1, weightShape[0], 1, 1}, std::nullopt)),
                                               axes, true, epsilon);
     }
 private:
@@ -48,6 +48,7 @@ private:
     dml::Expression m_weight;
     dml::Expression m_bias;
     std::vector<uint32_t> axes;
+    dml::TensorDimensions weightShape;
     // bool normalizeVariance;
     float epsilon;
 

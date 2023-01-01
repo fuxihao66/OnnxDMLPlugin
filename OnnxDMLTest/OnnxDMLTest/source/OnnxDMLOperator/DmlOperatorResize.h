@@ -1,176 +1,177 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "precomp.h"
+//#include "precomp.h"
+#include "../OnnxDMLCore/OperatorRegistration.h"
 
-namespace Dml
-{
-
-constexpr NameAndIndex coordinateTransformationModes[] =
-{
-    {"half_pixel", 0},
-    {"pytorch_half_pixel", 1},
-    {"align_corners", 2},
-    {"asymmetric", 3},
-    {"tf_half_pixel_for_nn", 4},
-    {"tf_crop_and_resize", 5},
-};
-
-constexpr NameAndIndex nearestNeighborRoundingModes[] =
-{
-    {"", 0},
-    {"round_prefer_floor", 0},  // round halves down
-    {"round_prefer_ceil", 1},   // round halves up
-    {"floor", 2},               // round always down
-    {"ceil", 3},                // round always up
-};
-
-void ComputePixelOffsetsAndScales(
-    const MLOperatorKernelCreationContext& kernelCreationContext,
-    gsl::span<const float> regionOfInterest, // May be empty depending on mode.
-    gsl::span<const uint32_t> inputDimensions,
-    gsl::span<const uint32_t> outputDimensions,
-    /*inout*/ gsl::span<float> scales,
-    /*out*/   gsl::span<float> inputPixelOffsets,
-    /*out*/   gsl::span<float> outputPixelOffsets
-    )
-{
-    assert(inputDimensions.size() == outputDimensions.size());
-    assert(inputPixelOffsets.size() == outputPixelOffsets.size());
-    assert(inputPixelOffsets.size() == scales.size());
-    assert(inputPixelOffsets.size() == inputDimensions.size());
-    assert(regionOfInterest.empty() || regionOfInterest.size() == inputDimensions.size() * 2);
-
-    std::string coordinateTransformationMode = kernelCreationContext.GetOptionalAttribute<std::string>(AttrName::CoordinateTransformationMode, "half_pixel");
-    auto optionalCoordinateTransformationModeValue = TryMapStringToIndex(coordinateTransformationMode, coordinateTransformationModes);
-    if (!optionalCoordinateTransformationModeValue)
-    {
-        ML_INVALID_ARGUMENT("Unsupported 'coordinate_transformation_mode'");
-    }
-    uint32_t coordinateTransformationModeValue = *optionalCoordinateTransformationModeValue;
-
-    ML_CHECK_VALID_ARGUMENT(
-        !regionOfInterest.empty() || coordinateTransformationModeValue != 5 /*tf_crop_and_resize*/,
-        "Resize expects 'roi' tensor for 'tf_crop_and_resize' mode."
-    );
-
-    const uint32_t rank = gsl::narrow_cast<uint32_t>(inputDimensions.size());
-
-    // Fill in all the input/output pixel offset for each axis,
-    // and recompute the scale for certain modes.
-
-    for (uint32_t i = 0; i < rank; ++i)
-    {
-        float inputPixelOffset = 0;
-        float outputPixelOffset = 0;
-
-        // All these mapping modes can be generalized to the equations:
-        //
-        // output_coordinate = (input_coordinate  + input_offset ) * scale + output_offset
-        // input_coordinate  = (output_coordinate - output_offset) / scale - input_offset
-        //
-        // With DML, a scale > 1 maps input to an upsampled output, and a positive pixel
-        // offset shifts the input contents to the right/down in the output.
-        //
-        // Since the equations from ONNX are in terms of mapping the output coordinate back
-        // to the input coordinate, any offsets need their signs flipped. e.g. For "half_pixel",
-        // the "x_resized" is the output coordinate, and the "+ 0.5" is the output coordinate
-        // adjustment which needs to be -0.5 when passed to DML.
-
-        switch (coordinateTransformationModeValue)
-        {
-        case 0:
-            // coordinate_transformation_mode is "half_pixel",
-            // x_original = (x_resized + 0.5) / scale - 0.5
-            inputPixelOffset = 0.5;
-            outputPixelOffset = -0.5;
-            // Keep existing scales.
-            break;
-
-        case 1:
-            // if coordinate_transformation_mode is "pytorch_half_pixel",
-            // x_original = length_resized > 1 ? (x_resized + 0.5) / scale - 0.5 : 0
-            if (inputDimensions[i] <= 1)
-            {
-                inputPixelOffset = 0.0;
-                outputPixelOffset = 0.0;
-                scales[i] = FLT_MAX; // Set large scale so all output pixels map to 0th input pixel.
-            }
-            else
-            {
-                inputPixelOffset = 0.5;
-                outputPixelOffset = -0.5;
-                // Keep existing scales.
-            }
-            break;
-
-        case 2:
-            // if coordinate_transformation_mode is "align_corners",
-            // x_original = x_resized * (length_original - 1) / (length_resized - 1)
-            inputPixelOffset = 0.0;
-            outputPixelOffset = 0.0;
-            if (outputDimensions[i] <= 1 || inputDimensions[i] <= 1)
-            {
-                // Protect against division by zero when either input/output is a single pixel.
-                scales[i] = FLT_MAX;
-            }
-            else
-            {
-                // Recalcalculate scale, ignoring existing one (only used to determine output size).
-                scales[i] = float(outputDimensions[i] - 1) / (inputDimensions[i] - 1);
-            }
-            break;
-
-        case 3:
-            // if coordinate_transformation_mode is "asymmetric",
-            // x_original = x_resized / scale
-            inputPixelOffset = 0.0;
-            outputPixelOffset = 0.0;
-            // Keep existing scales.
-            break;
-
-        case 4:
-            // if coordinate_transformation_mode is "tf_half_pixel_for_nn",
-            // x_original = (x_resized + 0.5) / scale
-            inputPixelOffset = 0.0;
-            outputPixelOffset = -0.5;
-            // Keep existing scales.
-            break;
-
-        case 5:
-            // if coordinate_transformation_mode is "tf_crop_and_resize",
-            // x_original = length_resized > 1 ? start_x * (length_original - 1) + x_resized * (end_x - start_x) * (length_original - 1) / (length_resized - 1)
-            //                                 : 0.5 * (start_x + end_x) * (length_original - 1)
-            if (inputDimensions[i] > 1)
-            {
-                assert(regionOfInterest.size() == rank * 2);
-
-                // Fold this part of the equation into the input offset: start_x * (length_original - 1)
-                inputPixelOffset = -(regionOfInterest[i] * (inputDimensions[i] - 1));
-                outputPixelOffset = 0.0;
-
-                // Fold this part to scale: (end_x - start_x) * (length_original - 1) / (length_resized - 1)
-                float computedScale = float(outputDimensions[i] - 1)
-                                    / std::max((regionOfInterest[i + rank] - regionOfInterest[i]) * (inputDimensions[i] - 1), 1.0f);
-                scales[i] = computedScale;
-            }
-            else // inputDimensions[i] <= 1
-            {
-                // 0.5 * (start_x + end_x) * (length_original - 1)
-                inputPixelOffset = -0.5f * (regionOfInterest[i] + regionOfInterest[i + rank]) * (inputDimensions[i] - 1);
-                outputPixelOffset = 0.0;
-                scales[i] = 1;
-            }
-            break;
-
-        default:
-            assert(false); // TryMapStringToIndex would have already bailed above.
-        }
-
-        inputPixelOffsets[i] = inputPixelOffset;
-        outputPixelOffsets[i] = outputPixelOffset;
-    }
-}
+//namespace Dml
+//{
+//
+//constexpr NameAndIndex coordinateTransformationModes[] =
+//{
+//    {"half_pixel", 0},
+//    {"pytorch_half_pixel", 1},
+//    {"align_corners", 2},
+//    {"asymmetric", 3},
+//    {"tf_half_pixel_for_nn", 4},
+//    {"tf_crop_and_resize", 5},
+//};
+//
+//constexpr NameAndIndex nearestNeighborRoundingModes[] =
+//{
+//    {"", 0},
+//    {"round_prefer_floor", 0},  // round halves down
+//    {"round_prefer_ceil", 1},   // round halves up
+//    {"floor", 2},               // round always down
+//    {"ceil", 3},                // round always up
+//};
+//
+//void ComputePixelOffsetsAndScales(
+//    const MLOperatorKernelCreationContext& kernelCreationContext,
+//    gsl::span<const float> regionOfInterest, // May be empty depending on mode.
+//    gsl::span<const uint32_t> inputDimensions,
+//    gsl::span<const uint32_t> outputDimensions,
+//    /*inout*/ gsl::span<float> scales,
+//    /*out*/   gsl::span<float> inputPixelOffsets,
+//    /*out*/   gsl::span<float> outputPixelOffsets
+//    )
+//{
+//    assert(inputDimensions.size() == outputDimensions.size());
+//    assert(inputPixelOffsets.size() == outputPixelOffsets.size());
+//    assert(inputPixelOffsets.size() == scales.size());
+//    assert(inputPixelOffsets.size() == inputDimensions.size());
+//    assert(regionOfInterest.empty() || regionOfInterest.size() == inputDimensions.size() * 2);
+//
+//    std::string coordinateTransformationMode = kernelCreationContext.GetOptionalAttribute<std::string>(AttrName::CoordinateTransformationMode, "half_pixel");
+//    auto optionalCoordinateTransformationModeValue = TryMapStringToIndex(coordinateTransformationMode, coordinateTransformationModes);
+//    if (!optionalCoordinateTransformationModeValue)
+//    {
+//        ML_INVALID_ARGUMENT("Unsupported 'coordinate_transformation_mode'");
+//    }
+//    uint32_t coordinateTransformationModeValue = *optionalCoordinateTransformationModeValue;
+//
+//    ML_CHECK_VALID_ARGUMENT(
+//        !regionOfInterest.empty() || coordinateTransformationModeValue != 5 /*tf_crop_and_resize*/,
+//        "Resize expects 'roi' tensor for 'tf_crop_and_resize' mode."
+//    );
+//
+//    const uint32_t rank = gsl::narrow_cast<uint32_t>(inputDimensions.size());
+//
+//    // Fill in all the input/output pixel offset for each axis,
+//    // and recompute the scale for certain modes.
+//
+//    for (uint32_t i = 0; i < rank; ++i)
+//    {
+//        float inputPixelOffset = 0;
+//        float outputPixelOffset = 0;
+//
+//        // All these mapping modes can be generalized to the equations:
+//        //
+//        // output_coordinate = (input_coordinate  + input_offset ) * scale + output_offset
+//        // input_coordinate  = (output_coordinate - output_offset) / scale - input_offset
+//        //
+//        // With DML, a scale > 1 maps input to an upsampled output, and a positive pixel
+//        // offset shifts the input contents to the right/down in the output.
+//        //
+//        // Since the equations from ONNX are in terms of mapping the output coordinate back
+//        // to the input coordinate, any offsets need their signs flipped. e.g. For "half_pixel",
+//        // the "x_resized" is the output coordinate, and the "+ 0.5" is the output coordinate
+//        // adjustment which needs to be -0.5 when passed to DML.
+//
+//        switch (coordinateTransformationModeValue)
+//        {
+//        case 0:
+//            // coordinate_transformation_mode is "half_pixel",
+//            // x_original = (x_resized + 0.5) / scale - 0.5
+//            inputPixelOffset = 0.5;
+//            outputPixelOffset = -0.5;
+//            // Keep existing scales.
+//            break;
+//
+//        case 1:
+//            // if coordinate_transformation_mode is "pytorch_half_pixel",
+//            // x_original = length_resized > 1 ? (x_resized + 0.5) / scale - 0.5 : 0
+//            if (inputDimensions[i] <= 1)
+//            {
+//                inputPixelOffset = 0.0;
+//                outputPixelOffset = 0.0;
+//                scales[i] = FLT_MAX; // Set large scale so all output pixels map to 0th input pixel.
+//            }
+//            else
+//            {
+//                inputPixelOffset = 0.5;
+//                outputPixelOffset = -0.5;
+//                // Keep existing scales.
+//            }
+//            break;
+//
+//        case 2:
+//            // if coordinate_transformation_mode is "align_corners",
+//            // x_original = x_resized * (length_original - 1) / (length_resized - 1)
+//            inputPixelOffset = 0.0;
+//            outputPixelOffset = 0.0;
+//            if (outputDimensions[i] <= 1 || inputDimensions[i] <= 1)
+//            {
+//                // Protect against division by zero when either input/output is a single pixel.
+//                scales[i] = FLT_MAX;
+//            }
+//            else
+//            {
+//                // Recalcalculate scale, ignoring existing one (only used to determine output size).
+//                scales[i] = float(outputDimensions[i] - 1) / (inputDimensions[i] - 1);
+//            }
+//            break;
+//
+//        case 3:
+//            // if coordinate_transformation_mode is "asymmetric",
+//            // x_original = x_resized / scale
+//            inputPixelOffset = 0.0;
+//            outputPixelOffset = 0.0;
+//            // Keep existing scales.
+//            break;
+//
+//        case 4:
+//            // if coordinate_transformation_mode is "tf_half_pixel_for_nn",
+//            // x_original = (x_resized + 0.5) / scale
+//            inputPixelOffset = 0.0;
+//            outputPixelOffset = -0.5;
+//            // Keep existing scales.
+//            break;
+//
+//        case 5:
+//            // if coordinate_transformation_mode is "tf_crop_and_resize",
+//            // x_original = length_resized > 1 ? start_x * (length_original - 1) + x_resized * (end_x - start_x) * (length_original - 1) / (length_resized - 1)
+//            //                                 : 0.5 * (start_x + end_x) * (length_original - 1)
+//            if (inputDimensions[i] > 1)
+//            {
+//                assert(regionOfInterest.size() == rank * 2);
+//
+//                // Fold this part of the equation into the input offset: start_x * (length_original - 1)
+//                inputPixelOffset = -(regionOfInterest[i] * (inputDimensions[i] - 1));
+//                outputPixelOffset = 0.0;
+//
+//                // Fold this part to scale: (end_x - start_x) * (length_original - 1) / (length_resized - 1)
+//                float computedScale = float(outputDimensions[i] - 1)
+//                                    / std::max((regionOfInterest[i + rank] - regionOfInterest[i]) * (inputDimensions[i] - 1), 1.0f);
+//                scales[i] = computedScale;
+//            }
+//            else // inputDimensions[i] <= 1
+//            {
+//                // 0.5 * (start_x + end_x) * (length_original - 1)
+//                inputPixelOffset = -0.5f * (regionOfInterest[i] + regionOfInterest[i + rank]) * (inputDimensions[i] - 1);
+//                outputPixelOffset = 0.0;
+//                scales[i] = 1;
+//            }
+//            break;
+//
+//        default:
+//            assert(false); // TryMapStringToIndex would have already bailed above.
+//        }
+//
+//        inputPixelOffsets[i] = inputPixelOffset;
+//        outputPixelOffsets[i] = outputPixelOffset;
+//    }
+//}
 
 // class DmlOperatorResize : public DmlOperator, public ResizeHelper
 // {
@@ -349,14 +350,8 @@ void ComputePixelOffsetsAndScales(
 // } // namespace Dml
 
 
-
-
-
-
 // old version
-
-#include "precomp.h"
-
+// TODO: need DML_RESAMPLE2_OPERATOR_DESC for better implementation
 namespace Dml
 {
 
@@ -370,7 +365,7 @@ public:
             assert(false); // TODO: Not supported yet
         
         m_input = expressionMap[node.inputNames[0]];
-        Dimensions inputShape = m_input.GetOutputDesc().sizes;
+        dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
 
         if (node.opType == "Upsample"){
             std::vector<char> temp;
@@ -437,7 +432,7 @@ public:
     }
 private:
     dml::Expression m_input;
-    TensorDimensions outputSizes;
+    dml::TensorDimensions outputSizes;
     DML_INTERPOLATION_MODE mode;
     std::vector<float> scales;
     // std::vector<float> inputPixelOffsets; // not supported by Upsample, but will be used for Resize

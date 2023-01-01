@@ -1,15 +1,15 @@
-
+#include "helper/pch.h"
 // force using fp16 and int/uint 32
-inline DML_TENSOR_DATA_TYPE TensorType2DmlTensorType(const TensorType type) {
+inline DML_TENSOR_DATA_TYPE TensorType2DmlTensorType(const ONNX_PARSER::TensorType type) {
     switch(type){
-    case UINT64:
-        return UINT32;
-    case INT64:
-        return INT32;
-    case FLOAT:
-    case DOUBLE:
-        return FLOAT16;
+    case ONNX_PARSER::TensorType::UINT64:
+        return DML_TENSOR_DATA_TYPE::DML_TENSOR_DATA_TYPE_UINT32;
+    case ONNX_PARSER::TensorType::INT64:
+        return DML_TENSOR_DATA_TYPE::DML_TENSOR_DATA_TYPE_INT32;
+    case ONNX_PARSER::TensorType::FLOAT:
+    case ONNX_PARSER::TensorType::DOUBLE:
+        return DML_TENSOR_DATA_TYPE::DML_TENSOR_DATA_TYPE_FLOAT16;
     default:
-        return type;
+        return static_cast<DML_TENSOR_DATA_TYPE>(type);
     }
 }
