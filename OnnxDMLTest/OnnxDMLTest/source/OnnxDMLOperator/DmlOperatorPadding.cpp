@@ -49,21 +49,46 @@ public:
             assert(false);
         }
 
-        std::vector<int> paddings;
         if (opsetVersion >= 11){
+            // 
+
+            std::vector<int64_t> paddings; // TODO: check 
+
             ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("pads", ONNX_PARSER::AttributeType::TENSOR);
             if (attriWrapper.isValid()){
                 paddings.resize(attriWrapper.getValue().size() / 4);
                 memcpy(paddings.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
+            else {
+                assert(false);
+            }
 
-            // TODO: CHECK INITIALIZER TYPE (scalar ??)
+            // TODO: CHECK INITIALIZER TYPE, might not be FLOAT 
             attriWrapper = node.GetAttribute("constant_value", ONNX_PARSER::AttributeType::TENSOR);
             if (attriWrapper.isValid()){
                 memcpy(&paddingValue, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
+            else {
+                paddingValue = 0.f;
+            }
+
+            assert(paddings.size() == inputShape.size() * 2);
+            // // Pad the parameters to respect DML's requirements
+            startPadding.resize(inputShape.size());
+            endPadding.resize(inputShape.size());
+            int index = 0;
+            for (int i = 0; i < inputShape.size(); i++) {
+                startPadding[i] = paddings[index++];
+
+            }
+            for (int i = 0; i < inputShape.size(); i++) {
+                endPadding[i] = paddings[index++];
+            }
         }
         else if (opsetVersion >= 2){
+            std::vector<int> paddings;
+
+
             ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("value", ONNX_PARSER::AttributeType::FLOAT);
             if (attriWrapper.isValid()){
                 memcpy(&paddingValue, attriWrapper.getValue().data(), attriWrapper.getValue().size());
@@ -79,20 +104,26 @@ public:
             else{
                 assert(false);
             }
+
+
+            assert(paddings.size() == inputShape.size() * 2);
+            // // Pad the parameters to respect DML's requirements
+            startPadding.resize(inputShape.size());
+            endPadding.resize(inputShape.size());
+            int index = 0;
+            for (int i = 0; i < inputShape.size(); i++) {
+                startPadding[i] = paddings[index++];
+
+            }
+            for (int i = 0; i < inputShape.size(); i++) {
+                endPadding[i] = paddings[index++];
+            }
         }
         else{
             assert(false);
         }
 
-        assert(paddings.size() == inputShape.size() * 2);
-        // // Pad the parameters to respect DML's requirements
-        startPadding.resize(inputShape.size());
-        endPadding.resize(inputShape.size());
-        int index = 0;
-        for (int i = 0; i < inputShape.size(); i++){
-            startPadding[i] = paddings[index++];
-            endPadding[i] = paddings[index++];
-        }
+        
    }
 
     dml::Expression Create(){

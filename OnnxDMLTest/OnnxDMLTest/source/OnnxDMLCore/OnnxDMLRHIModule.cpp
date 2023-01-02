@@ -8,12 +8,14 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
+#define _Debug 1
+
 namespace ODI {
 
     // in rhi thread
     void D3D12RHIContext::CreateDeviceResources() { // no need in unreal
 
-        {
+        if (_Debug){
             Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
             if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.GetAddressOf()))))
             {
@@ -120,7 +122,7 @@ namespace ODI {
         m_d3dDevice->SetName(L"DeviceResources");
 
 
-        {
+        if (_Debug) {
             Microsoft::WRL::ComPtr<ID3D12InfoQueue> d3dInfoQueue;
             if (SUCCEEDED(m_d3dDevice.As(&d3dInfoQueue)))
             {
@@ -193,7 +195,11 @@ namespace ODI {
     void D3D12RHIContext::CreateDMLResources() {
         // initialize once
         if (m_dmlDevice == nullptr) {
-            DMLCreateDevice(m_d3dDevice.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&m_dmlDevice));
+            if (_Debug)
+                DMLCreateDevice(m_d3dDevice.Get(), DML_CREATE_DEVICE_FLAG_DEBUG, IID_PPV_ARGS(&m_dmlDevice));
+            else
+                DMLCreateDevice(m_d3dDevice.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&m_dmlDevice));
+
 
             DML_FEATURE_QUERY_TENSOR_DATA_TYPE_SUPPORT fp16Query = { DML_TENSOR_DATA_TYPE_FLOAT16 };
             DML_FEATURE_DATA_TENSOR_DATA_TYPE_SUPPORT fp16Supported = {};

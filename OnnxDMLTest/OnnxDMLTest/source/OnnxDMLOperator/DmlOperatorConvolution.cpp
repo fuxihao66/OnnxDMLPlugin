@@ -31,7 +31,15 @@ public:
         }
         else{
             auto& biasName = node.inputNames[2];
-            m_bias = std::optional(expressionMap[biasName]);
+            auto tempBias = expressionMap[biasName];
+
+            if (tempBias.GetOutputDesc().sizes.size() == 1)
+                m_bias = std::optional(dml::Reinterpret(tempBias, dml::TensorDimensions{ 1, tempBias.GetOutputDesc().sizes[0], 1, 1 }, std::nullopt));
+            else
+                m_bias = std::optional(tempBias);
+
+
+
         }
         // attribute
         //std::vector<char> tempAttri;
@@ -71,6 +79,13 @@ public:
                 assert(false);
             }
         };
+
+        /*{
+            std::vector<int> kernelShape;
+
+            getIntsAttriAndCopy("kernel_shape", kernelShape);
+            
+        }*/
 
         getIntsAttriAndCopy("dilations", dialationAttri);
         // getIntsAttriAndCopy("kernel_shape", kernelShape);// no necessity
