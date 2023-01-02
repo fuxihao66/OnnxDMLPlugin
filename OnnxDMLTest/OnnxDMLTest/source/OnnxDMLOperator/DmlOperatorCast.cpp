@@ -26,11 +26,10 @@ public:
 
 
         { // data type
-            std::vector<char> tempAttri;
             int toVal;
-            bool hasTo = node.GetAttribute("to", ONNX_PARSER::AttributeType::INT, tempAttri);
-            if (hasTo) {
-                memcpy(&toVal, tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("to", ONNX_PARSER::AttributeType::INT);
+            if (attriWrapper.isValid()) {
+                memcpy(&toVal, attriWrapper.getValue().data(), attriWrapper.getValue().size());
 
                 targetDataType = static_cast<DML_TENSOR_DATA_TYPE>(ONNX_PARSER::OnnxTensorType2DmlTensorType(toVal));
             }

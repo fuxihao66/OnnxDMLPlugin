@@ -41,16 +41,16 @@ public:
         std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
         )
     {
-        std::vector<char> attribVal;
+        //std::vector<char> attribVal;
         
         switch (operatorType)
         {
         case DML_OPERATOR_ACTIVATION_ELU:
         case DML_OPERATOR_ACTIVATION_CELU:
         {
-            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasAlpha)
-                memcpy(&operatorDesc.elu.Alpha, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.elu.Alpha, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.elu.Alpha = 1.0f;
             break;
@@ -63,23 +63,23 @@ public:
         // case DML_OPERATOR_ACTIVATION_HARDMAX1:
         case DML_OPERATOR_ACTIVATION_HARD_SIGMOID:
         {
-            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasAlpha)
-                memcpy(&operatorDesc.hardSigmoid.Alpha, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.hardSigmoid.Alpha, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.hardSigmoid.Alpha = 0.2f;
-            bool hasBeta = node.GetAttribute("beta", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasBeta)
-                memcpy(&operatorDesc.hardSigmoid.Beta, attribVal.data(), attribVal.size());
+            attriWrapper = node.GetAttribute("beta", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.hardSigmoid.Beta, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else   
                 operatorDesc.hardSigmoid.Beta = 0.5f;
             break;
         }
         case DML_OPERATOR_ACTIVATION_LEAKY_RELU:
         {
-            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasAlpha)
-                memcpy(&operatorDesc.leakyRelu.Alpha, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.leakyRelu.Alpha, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.leakyRelu.Alpha = 0.01f;
             break;
@@ -102,14 +102,14 @@ public:
         //     break;
         case DML_OPERATOR_ACTIVATION_SCALED_ELU:
         {
-            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasAlpha)
-                memcpy(&operatorDesc.scaledElu.Alpha, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.scaledElu.Alpha, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.scaledElu.Alpha = 1.67326f;
-            bool hasGamma = node.GetAttribute("gamma", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasGamma)
-                memcpy(&operatorDesc.scaledElu.Gamma, attribVal.data(), attribVal.size());
+            attriWrapper = node.GetAttribute("gamma", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.scaledElu.Gamma, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else   
                 operatorDesc.scaledElu.Gamma = 1.0507f;
             break;
@@ -127,23 +127,23 @@ public:
         }
         case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU:
         {    
-            bool hasAlpha = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasAlpha)
-                memcpy(&operatorDesc.thresholdedRelu.Alpha, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("alpha", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.thresholdedRelu.Alpha, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.thresholdedRelu.Alpha = 1.f;
             break;
         }
         case DML_OPERATOR_ACTIVATION_SHRINK:
         {
-            bool hasBias = node.GetAttribute("bias", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasBias)
-                memcpy(&operatorDesc.shrink.Bias, attribVal.data(), attribVal.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("bias", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.shrink.Bias, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else
                 operatorDesc.shrink.Bias = 0.f;
-            bool hasThreshold = node.GetAttribute("lambd", ONNX_PARSER::AttributeType::FLOAT, attribVal);
-            if (hasThreshold)
-                memcpy(&operatorDesc.shrink.Threshold, attribVal.data(), attribVal.size());
+            attriWrapper = node.GetAttribute("lambd", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid())
+                memcpy(&operatorDesc.shrink.Threshold, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             else   
                 operatorDesc.shrink.Threshold = 0.5f;
             break;

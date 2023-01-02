@@ -34,17 +34,17 @@ public:
             m_bias = std::optional(expressionMap[biasName]);
         }
         // attribute
-        std::vector<char> tempAttri;
+        //std::vector<char> tempAttri;
         std::vector<int> paddingsAttri;
         std::vector<int> stridesAttri;
         std::vector<int> dialationAttri;
 
         { 
         //auto_pad must be either NOTSET, SAME_UPPER, SAME_LOWER or VALID.
-            bool hasAutoPad = node.GetAttribute("auto_pad", ONNX_PARSER::AttributeType::STRING, tempAttri);
-            if (hasAutoPad){
-                autoPad.resize(tempAttri.size());
-                memcpy(autoPad.data(), tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("auto_pad", ONNX_PARSER::AttributeType::STRING);
+            if (attriWrapper.isValid()){
+                autoPad.resize(attriWrapper.getValue().size());
+                memcpy(autoPad.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 autoPad = "NOTSET";
@@ -52,9 +52,9 @@ public:
         }
         
         {
-            bool hasGroup = node.GetAttribute("group", ONNX_PARSER::AttributeType::INT, tempAttri);
-            if (hasGroup){
-                memcpy(&group, tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("group", ONNX_PARSER::AttributeType::INT);
+            if (attriWrapper.isValid()){
+                memcpy(&group, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 group = 1;
@@ -62,10 +62,10 @@ public:
         }
 
         auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec) {
-            bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS, tempAttri);
-            if (hasAttri) {
-                attriVec.resize(tempAttri.size() / 4);
-                memcpy(attriVec.data(), tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS);
+            if (attriWrapper.isValid()) {
+                attriVec.resize(attriWrapper.getValue().size() / 4);
+                memcpy(attriVec.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else {
                 assert(false);

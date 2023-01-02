@@ -12,6 +12,38 @@ namespace ODI {
 
     // in rhi thread
     void D3D12RHIContext::CreateDeviceResources() { // no need in unreal
+
+        {
+            Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
+            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.GetAddressOf()))))
+            {
+                debugController->EnableDebugLayer();
+            }
+            else
+            {
+                OutputDebugStringA("WARNING: Direct3D Debug Device is not available\n");
+            }
+
+            //Microsoft::WRL::ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+            //if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
+            //{
+            //    m_dxgiFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+
+            //    dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+            //    dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+
+            //    DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
+            //    {
+            //        80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+            //    };
+            //    DXGI_INFO_QUEUE_FILTER filter = {};
+            //    filter.DenyList.NumIDs = _countof(hide);
+            //    filter.DenyList.pIDList = hide;
+            //    dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+            //}
+        }
+
+
         CreateDXGIFactory2(m_dxgiFactoryFlags, IID_PPV_ARGS(m_dxgiFactory.ReleaseAndGetAddressOf()));
 
         Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
@@ -86,6 +118,27 @@ namespace ODI {
         );
 
         m_d3dDevice->SetName(L"DeviceResources");
+
+
+        {
+            Microsoft::WRL::ComPtr<ID3D12InfoQueue> d3dInfoQueue;
+            if (SUCCEEDED(m_d3dDevice.As(&d3dInfoQueue)))
+            {
+                d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+                d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+                D3D12_MESSAGE_ID hide[] =
+                {
+                    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+                    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+                    D3D12_MESSAGE_ID_EXECUTECOMMANDLISTS_WRONGSWAPCHAINBUFFERREFERENCE
+                };
+                D3D12_INFO_QUEUE_FILTER filter = {};
+                filter.DenyList.NumIDs = _countof(hide);
+                filter.DenyList.pIDList = hide;
+                d3dInfoQueue->AddStorageFilterEntries(&filter);
+            }
+        }
+
 
         // Determine maximum supported feature level for this device
         static const D3D_FEATURE_LEVEL s_featureLevels[] = { D3D_FEATURE_LEVEL_12_1 };
@@ -163,7 +216,9 @@ namespace ODI {
         m_currentDescriptorTopIndex = 0;
     }
 
-    D3D12RHIContext::D3D12RHIContext() {
+    D3D12RHIContext::D3D12RHIContext()
+        : m_d3dMinFeatureLevel(D3D_FEATURE_LEVEL_12_1), m_dxgiFactoryFlags(0)
+    {
         CreateDeviceResources();
         CreateDMLResources();
     }
@@ -566,7 +621,7 @@ namespace ODI {
             }
         }
     }
-    void D3D12RHIContext::CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource> resourcePointer, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadBack) {
+    void D3D12RHIContext::CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadBack) {
         CD3DX12_RANGE readRange(0, 0);
         auto heapType = D3D12_HEAP_TYPE_UPLOAD;
         if (needReadBack)
@@ -590,7 +645,7 @@ namespace ODI {
             UINT8* pDataBegin;
 
             resourcePointer->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin));
-            memcpy(pDataBegin, data->data(), data->size());
+            memcpy(pDataBegin, data->data(), data->size() * sizeof(uint16_t));
             resourcePointer->Unmap(0, nullptr);
         }
 
@@ -610,6 +665,13 @@ namespace ODI {
 
         m_commandList->CopyResource(readbackOutput, readbackInput);
     }
+
+    void D3D12RHIContext::Prepare() {
+        m_commandAllocator->Reset();
+        m_commandList->Reset(m_commandAllocator.Get(), nullptr);
+    }
+
+    
 
     void D3D12RHIContext::CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte) {
 

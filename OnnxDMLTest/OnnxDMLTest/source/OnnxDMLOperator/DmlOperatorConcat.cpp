@@ -24,10 +24,10 @@ public:
 
         int tempaxis;
         {
-            std::vector<char> temp;
-            bool hasAxis = node.GetAttribute("axis", ONNX_PARSER::AttributeType::INT, temp);
-            if (hasAxis){
-                memcpy(&tempaxis, temp.data(), temp.size());
+            //std::vector<char> temp;
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axis", ONNX_PARSER::AttributeType::INT);
+            if (attriWrapper.isValid()){
+                memcpy(&tempaxis, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else
                 assert(false);

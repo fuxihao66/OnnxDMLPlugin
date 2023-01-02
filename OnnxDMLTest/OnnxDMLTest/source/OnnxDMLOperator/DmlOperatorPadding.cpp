@@ -18,13 +18,13 @@ public:
         m_input = expressionMap[node.inputNames[0]];
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         
-        std::vector<char> tempAttri;
+        //std::vector<char> tempAttri;
         { 
             std::string mode;
-            bool hasMode = node.GetAttribute("mode", ONNX_PARSER::AttributeType::STRING, tempAttri);
-            if (hasMode){
-                mode.resize(tempAttri.size());
-                memcpy(mode.data(), tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("mode", ONNX_PARSER::AttributeType::STRING);
+            if (attriWrapper.isValid()){
+                mode.resize(attriWrapper.getValue().size());
+                memcpy(mode.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 mode = "constant";
@@ -51,30 +51,30 @@ public:
 
         std::vector<int> paddings;
         if (opsetVersion >= 11){
-            bool hasPads = node.GetAttribute("pads", ONNX_PARSER::AttributeType::TENSOR, tempAttri);
-            if (hasPads){
-                paddings.resize(tempAttri.size() / 4);
-                memcpy(paddings.data(), tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("pads", ONNX_PARSER::AttributeType::TENSOR);
+            if (attriWrapper.isValid()){
+                paddings.resize(attriWrapper.getValue().size() / 4);
+                memcpy(paddings.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
 
             // TODO: CHECK INITIALIZER TYPE (scalar ??)
-            bool hasConstants = node.GetAttribute("constant_value", ONNX_PARSER::AttributeType::TENSOR, tempAttri);
-            if (hasConstants){
-                memcpy(&paddingValue, tempAttri.data(), tempAttri.size());
+            attriWrapper = node.GetAttribute("constant_value", ONNX_PARSER::AttributeType::TENSOR);
+            if (attriWrapper.isValid()){
+                memcpy(&paddingValue, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
         }
         else if (opsetVersion >= 2){
-            bool hasValue = node.GetAttribute("value", ONNX_PARSER::AttributeType::FLOAT, tempAttri);
-            if (hasValue){
-                memcpy(&paddingValue, tempAttri.data(), tempAttri.size());
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("value", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid()){
+                memcpy(&paddingValue, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 paddingValue = 0.f;
             }
-            bool hasPads = node.GetAttribute("pads", ONNX_PARSER::AttributeType::INTS, tempAttri);
-            if (hasPads){
-                paddings.resize(tempAttri.size() / 4);
-                memcpy(paddings.data(), tempAttri.data(), tempAttri.size());
+            attriWrapper = node.GetAttribute("pads", ONNX_PARSER::AttributeType::INTS);
+            if (attriWrapper.isValid()){
+                paddings.resize(attriWrapper.getValue().size() / 4);
+                memcpy(paddings.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 assert(false);

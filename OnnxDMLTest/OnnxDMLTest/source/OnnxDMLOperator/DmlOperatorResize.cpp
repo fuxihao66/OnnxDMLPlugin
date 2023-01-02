@@ -368,24 +368,46 @@ public:
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
 
         if (node.opType == "Upsample"){
-            std::vector<char> temp;
+            //std::vector<char> temp;
             
             if (opsetVersion >= 10)
                 assert(false); // deprecated 
             if (opsetVersion == 9){
-                node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR, temp);
-                scales.resize(temp.size() / 4);
-                memcpy(scales.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR);
+                if (attriWrapper.isValid()) {
+                    scales.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(scales.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                }
+                else {
+                    assert(false);
+                }
             }
-            else{
+            else if (opsetVersion >= 7) {
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::FLOATS);
+                if (attriWrapper.isValid()) {
+                    scales.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(scales.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                }
+                else {
+                    assert(false);
+                }
+            }
+            else{ // deprecated
                 float heightScale;
                 float widthScale;
 
-                node.GetAttribute("height_scale", ONNX_PARSER::AttributeType::FLOAT, temp);
-                memcpy(&heightScale, temp.data(), temp.size());
-
-                node.GetAttribute("width_scale", ONNX_PARSER::AttributeType::FLOAT, temp);
-                memcpy(&widthScale, temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("height_scale", ONNX_PARSER::AttributeType::FLOAT);
+                if (attriWrapper.isValid())
+                    memcpy(&heightScale, attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                else {
+                    assert(false);
+                }
+                attriWrapper = node.GetAttribute("width_scale", ONNX_PARSER::AttributeType::FLOAT);
+                if (attriWrapper.isValid())
+                    memcpy(&widthScale, attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                else {
+                    assert(false);
+                }
 
                 scales.push_back(1);
                 scales.push_back(1);
@@ -398,9 +420,9 @@ public:
 
             std::string tempMode;
             {
-                node.GetAttribute("mode", ONNX_PARSER::AttributeType::STRING, temp);
-                tempMode.resize(temp.size());
-                memcpy(tempMode.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("mode", ONNX_PARSER::AttributeType::STRING);
+                tempMode.resize(attriWrapper.getValue().size());
+                memcpy(tempMode.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             if (tempMode == "nearest"){
                 mode = DML_INTERPOLATION_MODE_NEAREST_NEIGHBOR;

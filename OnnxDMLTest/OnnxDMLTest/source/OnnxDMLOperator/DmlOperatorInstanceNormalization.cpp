@@ -20,10 +20,10 @@ public:
         weightShape = m_weight.GetOutputDesc().sizes;
         
         {
-            std::vector<char> temp;
-            bool hasEpsilon = node.GetAttribute("epsilon", ONNX_PARSER::AttributeType::FLOAT, temp);
-            if (hasEpsilon){
-                memcpy(&epsilon, temp.data(), temp.size());
+            //std::vector<char> temp;
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("epsilon", ONNX_PARSER::AttributeType::FLOAT);
+            if (attriWrapper.isValid()){
+                memcpy(&epsilon, attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else{
                 epsilon = 1e-5f;

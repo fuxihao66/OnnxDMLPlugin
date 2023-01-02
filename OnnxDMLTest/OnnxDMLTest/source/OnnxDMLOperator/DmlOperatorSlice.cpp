@@ -26,13 +26,13 @@ public:
         std::vector<int> ends;
         std::vector<int> starts;
 
-        std::vector<char> temp;
+        //std::vector<char> temp;
         if (opsetVersion < 10){
             auto getIntsAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
-                bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS, temp);
-                if (hasAttri){
-                    attriVec.resize(temp.size() / 4);
-                    memcpy(attriVec.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::INTS);
+                if (attriWrapper.isValid()){
+                    attriVec.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(attriVec.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
                 else{
                     assert(false);
@@ -41,19 +41,19 @@ public:
             getIntsAttriAndCopy("starts", starts);
             getIntsAttriAndCopy("ends", ends);
             {
-                bool hasAxis = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS, temp);
-                if (!hasAxis){
-                    axes.resize(temp.size() / 4);
-                    memcpy(axes.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS);
+                if (attriWrapper.isValid()){
+                    axes.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(axes.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
             }
         }
         else{
             auto getTensorAttriAndCopy = [&](const std::string& attriName, std::vector<int>& attriVec){
-                bool hasAttri = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::TENSOR, temp);
-                if (hasAttri){
-                    attriVec.resize(temp.size() / 4);
-                    memcpy(attriVec.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute(attriName, ONNX_PARSER::AttributeType::TENSOR);
+                if (attriWrapper.isValid()){
+                    attriVec.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(attriVec.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
                 else{
                     assert(false);
@@ -62,17 +62,17 @@ public:
             getTensorAttriAndCopy("starts", starts);
             getTensorAttriAndCopy("ends", ends);
             {
-                bool hasAxis = node.GetAttribute("axes", ONNX_PARSER::AttributeType::TENSOR, temp);
-                if (!hasAxis){
-                    axes.resize(temp.size() / 4);
-                    memcpy(axes.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axes", ONNX_PARSER::AttributeType::TENSOR);
+                if (attriWrapper.isValid()){
+                    axes.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(axes.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
             }
             {
-                bool hasSteps = node.GetAttribute("steps", ONNX_PARSER::AttributeType::TENSOR, temp);
-                if (!hasSteps){
-                    steps.resize(temp.size() / 4);
-                    memcpy(steps.data(), temp.data(), temp.size());
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("steps", ONNX_PARSER::AttributeType::TENSOR);
+                if (attriWrapper.isValid()){
+                    steps.resize(attriWrapper.getValue().size() / 4);
+                    memcpy(steps.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
             }
             

@@ -118,12 +118,14 @@ namespace ODI{
         void CreateDMLResources();
         //void InitializeDMLResource();
     public:
-        void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false); // only used for debug
+        void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>&, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false); // only used for debug
         void ForceCPUSync(); // only used for debug
         void CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte);
         void CopyForReadBack(ID3D12Resource* readbackInput, ID3D12Resource* readbackOutput);
         void InitializeNewModel(const std::wstring& path_to_onnx, const std::string& modelName);
         void RunDMLInfer(const std::map<std::string, ID3D12Resource*> inputs, ID3D12Resource* outputs, const std::string& modelName);
+
+        void Prepare();
     private:
         Microsoft::WRL::ComPtr<IDMLDevice>              m_dmlDevice;
         Microsoft::WRL::ComPtr<IDMLCommandRecorder>     m_dmlCommandRecorder;

@@ -19,12 +19,12 @@ public:
         // get unsqueeze axis from attribute 
         std::vector<int> axis;
         {
-            std::vector<char> temp;
-            bool hasAxis = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS, temp);
-            if (!hasAxis)
+            //std::vector<char> temp;
+            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS);
+            if (!attriWrapper.isValid())
                 assert(false);
-            axis.resize(temp.size() / 4);
-            memcpy(axis.data(), temp.data(), temp.size());
+            axis.resize(attriWrapper.getValue().size() / 4);
+            memcpy(axis.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
         }
         int AxisSize = axis.size();
 

@@ -64,7 +64,7 @@ bool LoadImageFromFile(std::vector<uint8_t>& data, const std::string& fileName, 
     std::memcpy(data.data(), decoder.GetImage(), data.size());
     return true;
 }
-int main()
+void testModel()
 {
     ODI::D3D12RHIContext context;
 
@@ -78,7 +78,7 @@ int main()
 
     std::vector<uint8_t> jpgInputData;
     int width, height;
-    LoadImageFromFile(jpgInputData, "data/testimg.jpg", width, height);
+    LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
 
     std::vector<uint16_t> inputData;
     Uint8ToHalfCHW(jpgInputData, inputData, width, height);
@@ -86,17 +86,65 @@ int main()
     context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, bufferSize); // buffer for inference
     context.CreateBufferFromData(modelOutput, std::nullopt, bufferSize);
     context.CreateBufferFromData(readbackOutput, std::nullopt, bufferSize, true);
+    std::vector<uint16_t> cpuImageData;
+    std::vector<uint8_t> jpgOutputData;
+
+
+    context.Prepare();
 
     context.InitializeNewModel(L"D:/candy-9.onnx", "Candy");
-    context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "Candy");
+    /*context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "Candy");
     context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
     context.ForceCPUSync();
 
-    std::vector<uint16_t> cpuImageData;
     context.CPUReadBack(readbackOutput.Get(), cpuImageData, bufferSize);
+
+    HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
+    SaveImageToFile(jpgOutputData, "testOutput.png", width, height);*/
+
+}
+
+void testReadBack()
+{
+    ODI::D3D12RHIContext context;
+
+    /*ID3D12Resource * modelInput;
+    ID3D12Resource * modelOutput;*/
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
+
+
+    std::vector<uint8_t> jpgInputData;
+    int width, height;
+    LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
+
+    std::vector<uint16_t> inputData;
+    Uint8ToHalfCHW(jpgInputData, inputData, width, height);
+
+
+    auto bufferSize = width * height * 3 * sizeof(uint16_t);
+    context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, bufferSize); // buffer for inference
+    //context.CreateBufferFromData(modelOutput, std::nullopt, bufferSize);
+    context.CreateBufferFromData(readbackOutput, std::nullopt, bufferSize, true);
+
+    std::vector<uint16_t> cpuImageData;
     std::vector<uint8_t> jpgOutputData;
 
+    context.Prepare();
+    context.CopyForReadBack(modelInput.Get(), readbackOutput.Get());
+    context.ForceCPUSync();
+
+    context.CPUReadBack(readbackOutput.Get(), cpuImageData, bufferSize);
+    
     HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
     SaveImageToFile(jpgOutputData, "testOutput.png", width, height);
 
+}
+
+int main() {
+    //testReadBack();
+    testModel();
+    return 0;
 }
