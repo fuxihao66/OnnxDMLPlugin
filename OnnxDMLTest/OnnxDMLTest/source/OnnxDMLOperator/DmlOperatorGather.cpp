@@ -24,6 +24,8 @@ public:
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         dml::TensorDimensions indicesShape = m_indices.GetOutputDesc().sizes;
         
+        
+
         int tempaxis;
         {
             //std::vector<char> temp;
@@ -39,17 +41,27 @@ public:
         else
             axis = tempaxis;
 
-        indexDimensions = indicesShape.size(); // TODO: need unit test
+        indexDimensions = indicesShape.size(); 
+
+        paddedIndicesSize.resize(inputShape.size());
+        for (int i = 0; i < inputShape.size() - indicesShape.size(); i++) {
+            paddedIndicesSize[i] = 1;
+        }
+        int index = 0;
+        for (int i = inputShape.size() - indicesShape.size(); i < paddedIndicesSize.size(); i++) {
+            paddedIndicesSize[i] = indicesShape[index++];
+        }
     }
     dml::Expression Create(){
-        return dml::Gather(m_input, m_indices, axis, indexDimensions);
+        // DML Gather requires the rank of indices being the same as input 
+        return dml::Gather(m_input, dml::Reinterpret( m_indices, paddedIndicesSize, std::nullopt), axis, indexDimensions);
     }
 private:
     dml::Expression m_input;
     dml::Expression m_indices;
     uint32_t axis;
     uint32_t indexDimensions;
-
+    dml::TensorDimensions paddedIndicesSize;
 };
 
 // class DmlOperatorGatherElements : public DmlOperator
