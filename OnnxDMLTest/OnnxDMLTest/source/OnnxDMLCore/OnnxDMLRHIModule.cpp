@@ -270,6 +270,7 @@ namespace ODI {
             delete(parser);
         }
 
+
         //Microsoft::WRL::ComPtr<IDMLCompiledOperator> ppdmlGraph;
         //ID3D12Resource* pWeightBuffer;
 

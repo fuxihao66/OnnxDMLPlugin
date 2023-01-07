@@ -104,6 +104,41 @@ void testModel()
 
 }
 
+void testGather() {
+    ODI::D3D12RHIContext context;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
+
+    std::vector<uint16_t> inputData;
+
+    inputData.push_back(Float16Compressor::compress(0.1f));
+    inputData.push_back(Float16Compressor::compress(0.2f));
+    inputData.push_back(Float16Compressor::compress(0.3f));
+    inputData.push_back(Float16Compressor::compress(0.4f));
+
+    auto inputSize = 4 * sizeof(uint16_t);
+    auto outputSize = 4 * sizeof(uint16_t);
+    context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+    context.CreateBufferFromData(modelOutput, std::nullopt, outputSize);
+    context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
+    std::vector<uint16_t> cpuImageData;
+
+    context.Prepare();
+
+    context.InitializeNewModel(L"D:/UGit/UnitTestOnnxFileGenerator/Gather-7.onnx", "GatherTest");
+    context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "GatherTest");
+    context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
+    context.ForceCPUSync();
+
+    context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
+    // output should be [0.4f, 0.2f, 0.1f, 0.3f]
+    for (int i = 0; i < 4; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+
 void testReadBack()
 {
     ODI::D3D12RHIContext context;
@@ -145,6 +180,7 @@ void testReadBack()
 
 int main() {
     //testReadBack();
-    testModel();
+    //testModel();
+    testGather();
     return 0;
 }
