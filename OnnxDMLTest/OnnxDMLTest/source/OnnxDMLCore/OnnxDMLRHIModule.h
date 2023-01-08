@@ -7,6 +7,7 @@ namespace ODI{
     struct ModelInfo {
         unsigned int                                        modelInputNum;
         unsigned int                                        modelOutputNum;
+        std::vector<ONNX_PARSER::BindingInfo>               weightsBinding;
         /*unsigned int                                        descriptorCPUOffset;
         unsigned int                                        descriptorGPUOffset;*/
         std::vector<DML_BINDING_DESC>                       inputBindings;
@@ -15,6 +16,7 @@ namespace ODI{
         Microsoft::WRL::ComPtr<ID3D12Resource>              modelPersistentResource;
         Microsoft::WRL::ComPtr<ID3D12Resource>              modelTemporaryResource;
         Microsoft::WRL::ComPtr<ID3D12Resource>              modelOperatorWeights;
+        Microsoft::WRL::ComPtr<ID3D12Resource>              scratchResource; // used for upload weights
         Microsoft::WRL::ComPtr<IDMLBindingTable>            dmlBindingTable;
         ModelInfo() : modelInputNum(0), modelOutputNum(0), dmlGraph(nullptr), dmlOpInitializer(nullptr),
             modelPersistentResource(nullptr), modelTemporaryResource(nullptr), modelOperatorWeights(nullptr), dmlBindingTable(nullptr)
@@ -118,11 +120,13 @@ namespace ODI{
         void CreateDMLResources();
         //void InitializeDMLResource();
     public:
+        void CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte);
         void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>&, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false); // only used for debug
         void ForceCPUSync(); // only used for debug
         void CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte);
         void CopyForReadBack(ID3D12Resource* readbackInput, ID3D12Resource* readbackOutput);
-        void InitializeNewModel(const std::wstring& path_to_onnx, const std::string& modelName);
+        void ParseUploadModelData(const std::wstring& path_to_onnx, const std::string& modelName);
+        void InitializeNewModel(const std::string& modelName);
         void RunDMLInfer(const std::map<std::string, ID3D12Resource*> inputs, ID3D12Resource* outputs, const std::string& modelName);
 
         void Prepare();

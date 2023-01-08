@@ -92,7 +92,8 @@ void testModel()
 
     context.Prepare();
 
-    context.InitializeNewModel(L"D:/candy-9.onnx", "Candy");
+    context.ParseUploadModelData(L"D:/candy-9.onnx", "Candy");
+    context.InitializeNewModel("Candy");
     /*context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "Candy");
     context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
     context.ForceCPUSync();
@@ -107,6 +108,7 @@ void testModel()
 void testGather() {
     ODI::D3D12RHIContext context;
 
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload;
     Microsoft::WRL::ComPtr<ID3D12Resource> modelInput;
     Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
     Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
@@ -120,14 +122,23 @@ void testGather() {
 
     auto inputSize = 4 * sizeof(uint16_t);
     auto outputSize = 4 * sizeof(uint16_t);
-    context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+
+    context.Prepare(); // reset command list
+
+    //context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+    context.CreateBufferFromDataSubresource(modelInput, modelInputUpload, inputData, inputSize); // make sure model input is on default heap
     context.CreateBufferFromData(modelOutput, std::nullopt, outputSize);
     context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
     std::vector<uint16_t> cpuImageData;
 
+    context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/Gather-7.onnx", "GatherTest");
+    context.ForceCPUSync();
     context.Prepare();
 
-    context.InitializeNewModel(L"D:/UGit/UnitTestOnnxFileGenerator/Gather-7.onnx", "GatherTest");
+    context.InitializeNewModel("GatherTest");
+    //context.ForceCPUSync();
+    context.Prepare();
+
     context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "GatherTest");
     context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
     context.ForceCPUSync();
@@ -139,7 +150,7 @@ void testGather() {
     }
 }
 
-void testReadBack()
+void testReadBack() // legacy, fail 
 {
     ODI::D3D12RHIContext context;
 

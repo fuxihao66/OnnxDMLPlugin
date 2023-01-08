@@ -5,6 +5,7 @@
 #pragma warning(disable : 4238)
 
 #pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -244,7 +245,7 @@ namespace ODI {
     }
 
     
-    void D3D12RHIContext::InitializeNewModel(const std::wstring& path_to_onnx, const std::string& modelName) {
+    void D3D12RHIContext::ParseUploadModelData(const std::wstring& path_to_onnx, const std::string& modelName) {
         m_modelNameToResourceInfo[modelName] = ModelInfo();
 
         auto& currOnnxInfo = m_modelNameToResourceInfo[modelName];
@@ -301,7 +302,7 @@ namespace ODI {
             for (auto& inputPair : inputMap) {
                 auto& inputInfo = inputPair.second;
                 dml::TensorDimensions modelInputShape;
-                
+
                 for (int i = 0; i < inputInfo.dims; i++) {
                     modelInputShape.push_back(inputInfo.shapes[i]);
                 }
@@ -319,7 +320,7 @@ namespace ODI {
                     modelWeightShape.push_back(initializerInfo.shapes[i]);
                 }
 
-                expressionMap[initializerPair.first] = dml::InputTensor(graph, initializerInfo.index + modelInputNum, 
+                expressionMap[initializerPair.first] = dml::InputTensor(graph, initializerInfo.index + modelInputNum,
                     dml::TensorDesc(static_cast<DML_TENSOR_DATA_TYPE>(initializerInfo.tensorType), flags, modelWeightShape, policy));
 
                 currentInputIndex = std::max(initializerInfo.index + modelInputNum + 1, currentInputIndex);
@@ -390,7 +391,7 @@ namespace ODI {
                     weightsBinding.push_back(ONNX_PARSER::BindingInfo(prevStride, shapeByteSize));
                     dmlWeights.resize(prevStride + shapeByteSize);
                     memcpy(dmlWeights.data() + prevStride, inputShape.data(), shapeByteSize);
-                    expressionMap[graphNodeKey] = dml::InputTensor(graph, currentInputIndex, 
+                    expressionMap[graphNodeKey] = dml::InputTensor(graph, currentInputIndex,
                         dml::TensorDesc(static_cast<DML_TENSOR_DATA_TYPE>(ONNX_PARSER::TensorType::UINT32), flags, dml::TensorDimensions{ static_cast<uint32_t>(inputShape.size()) }, policy));
                     currentInputIndex += 1;
                 }
@@ -400,6 +401,8 @@ namespace ODI {
                 }
 
             }
+
+            currOnnxInfo.weightsBinding = weightsBinding;
 
 
             // TODO: only support single output
@@ -420,23 +423,51 @@ namespace ODI {
 
         }
 
-        { // create and upload resource
-            CD3DX12_RANGE readRange(0, 0);
-            m_d3dDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                D3D12_HEAP_FLAG_NONE,
-                &CD3DX12_RESOURCE_DESC::Buffer(dmlWeights.size()),
-                D3D12_RESOURCE_STATE_GENERIC_READ,
-                nullptr,
-                IID_PPV_ARGS(&currOnnxInfo.modelOperatorWeights));
-            UINT8* pDataBegin;
+        { // create and upload resource; DML input only supports resource on default heap
+            D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(dmlWeights.size(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
+            CD3DX12_RANGE readRange(0, 0);
+            m_d3dDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+                D3D12_HEAP_FLAG_NONE,
+                &resourceDesc,
+                D3D12_RESOURCE_STATE_COMMON,
+                nullptr,
+                IID_PPV_ARGS(currOnnxInfo.modelOperatorWeights.ReleaseAndGetAddressOf()));
+
+
+            D3D12_SUBRESOURCE_DATA weightsData = {};
+            weightsData.pData = dmlWeights.data();
+            UINT64 uploadSize = GetRequiredIntermediateSize(
+                currOnnxInfo.modelOperatorWeights.Get(),
+                0,
+                1);
+            CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+            CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadSize);
+
+            // Create a temporary buffer
+            currOnnxInfo.scratchResource = nullptr;
+            m_d3dDevice->CreateCommittedResource(
+                &heapProps,
+                D3D12_HEAP_FLAG_NONE,
+                &resDesc,
+                D3D12_RESOURCE_STATE_GENERIC_READ,
+                nullptr, // D3D12_CLEAR_VALUE* pOptimizedClearValue
+                IID_PPV_ARGS(currOnnxInfo.scratchResource.ReleaseAndGetAddressOf()));
+
+            // Submit resource copy to command list
+            UpdateSubresources(m_commandList.Get(), currOnnxInfo.modelOperatorWeights.Get(), currOnnxInfo.scratchResource.Get(), 0, 0, 1, &weightsData);
+
+            /*UINT8* pDataBegin;
             currOnnxInfo.modelOperatorWeights->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin));
             memcpy(pDataBegin, dmlWeights.data(), dmlWeights.size());
-            currOnnxInfo.modelOperatorWeights->Unmap(0, nullptr);
+            currOnnxInfo.modelOperatorWeights->Unmap(0, nullptr);*/
         }
-        
+    }
+    void D3D12RHIContext::InitializeNewModel(const std::string& modelName){
 
-        
+        auto& currOnnxInfo = m_modelNameToResourceInfo[modelName];
+        auto& weightsBinding = currOnnxInfo.weightsBinding;
+        auto modelInputNum = currOnnxInfo.modelInputNum;
 
 
         m_dmlDevice->CreateOperatorInitializer(1, currOnnxInfo.dmlGraph.GetAddressOf(), IID_PPV_ARGS(&currOnnxInfo.dmlOpInitializer));
@@ -551,6 +582,7 @@ namespace ODI {
         // Record the initialization
         m_dmlCommandRecorder->RecordDispatch(m_commandList.Get(), currOnnxInfo.dmlOpInitializer.Get(), initBindingTable.Get());
 
+        ForceCPUSync();
 
         tableDesc.Dispatchable = currOnnxInfo.dmlGraph.Get();
         tableDesc.SizeInDescriptors = executeBindingProps.RequiredDescriptorCount;
@@ -628,7 +660,54 @@ namespace ODI {
             }
         }
     }
+    void D3D12RHIContext::CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte) {
+        CD3DX12_RANGE readRange(0, 0);
+
+        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInByte, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+
+        m_d3dDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+            D3D12_HEAP_FLAG_NONE,
+            &resourceDesc,
+            D3D12_RESOURCE_STATE_COMMON,
+            nullptr,
+            IID_PPV_ARGS(resourcePointer.ReleaseAndGetAddressOf()));
+
+
+        D3D12_SUBRESOURCE_DATA weightsData = {};
+        weightsData.pData = data.data();
+        UINT64 uploadSize = GetRequiredIntermediateSize(
+            resourcePointer.Get(),
+            0,
+            1);
+        CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
+        CD3DX12_RESOURCE_DESC resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadSize);
+
+        // Create a temporary buffer
+        uploadResourcePointer = nullptr;
+        m_d3dDevice->CreateCommittedResource(
+            &heapProps,
+            D3D12_HEAP_FLAG_NONE,
+            &resDesc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr, // D3D12_CLEAR_VALUE* pOptimizedClearValue
+            IID_PPV_ARGS(uploadResourcePointer.ReleaseAndGetAddressOf()));
+
+        // Submit resource copy to command list
+        UpdateSubresources(m_commandList.Get(), resourcePointer.Get(), uploadResourcePointer.Get(), 0, 0, 1, &weightsData);
+
+    }
+
     void D3D12RHIContext::CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadBack) {
+
+
+        D3D12_RESOURCE_FLAGS resourceFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        if (needReadBack)
+            resourceFlag = D3D12_RESOURCE_FLAG_NONE;
+
+        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInByte, resourceFlag);
+
+
         CD3DX12_RANGE readRange(0, 0);
         auto heapType = D3D12_HEAP_TYPE_UPLOAD;
         if (needReadBack)
@@ -643,7 +722,7 @@ namespace ODI {
 
         m_d3dDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(heapType),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInByte),
+            &resourceDesc,
             resourceState,
             nullptr,
             IID_PPV_ARGS(resourcePointer.ReleaseAndGetAddressOf()));
@@ -664,7 +743,7 @@ namespace ODI {
             {
                 CD3DX12_RESOURCE_BARRIER::Transition(
                     readbackInput,
-                    D3D12_RESOURCE_STATE_COMMON,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                     D3D12_RESOURCE_STATE_COPY_SOURCE)
             };
             m_commandList->ResourceBarrier(1, &outputBufferResourceBarrier);
