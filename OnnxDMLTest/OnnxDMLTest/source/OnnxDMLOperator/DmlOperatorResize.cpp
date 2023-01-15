@@ -375,7 +375,7 @@ public:
             if (opsetVersion == 9){
                 ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR);
                 if (attriWrapper.isValid()) {
-                    scales.resize(attriWrapper.getValue().size() / 4);
+                    scales.resize(attriWrapper.getValue().size() / sizeof(uint16_t)); //TODO: all tensor is converted to half
                     memcpy(scales.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
                 else {
@@ -385,7 +385,7 @@ public:
             else if (opsetVersion >= 7) {
                 ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::FLOATS);
                 if (attriWrapper.isValid()) {
-                    scales.resize(attriWrapper.getValue().size() / 4);
+                    scales.resize(attriWrapper.getValue().size() / 4); // 
                     memcpy(scales.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
                 }
                 else {
