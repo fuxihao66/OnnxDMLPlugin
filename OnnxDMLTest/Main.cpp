@@ -280,6 +280,73 @@ void UnitTest2Params(const std::wstring& onnxFile, const std::string& modelName,
     context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
 }
 
+void UnitTest3Params(const std::wstring& onnxFile, const std::string& modelName,
+    const unsigned int inputSize, const unsigned int otherInputSize, const unsigned int outputSize,
+    const std::vector<uint16_t>& inputData0, const std::vector<uint16_t>& inputData1, const std::vector<uint16_t>& inputData2, std::vector<uint16_t>& cpuImageData) {
+    ODI::D3D12RHIContext context;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload0; //TODO: input and output requires alignment?
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput0;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload1; //TODO: input and output requires alignment?
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput1;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload2; //TODO: input and output requires alignment?
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput2;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
+
+    context.Prepare(); // reset command list
+
+    //context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+    context.CreateBufferFromDataSubresource(modelInput0, modelInputUpload0, inputData0, inputSize); // make sure model input is on default heap
+    context.CreateBufferFromDataSubresource(modelInput1, modelInputUpload1, inputData1, otherInputSize); // make sure model input is on default heap
+    context.CreateBufferFromDataSubresource(modelInput2, modelInputUpload2, inputData2, otherInputSize); // make sure model input is on default heap
+    context.CreateBufferFromData(modelOutput, std::nullopt, outputSize);
+    context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
+    //std::vector<uint16_t> cpuImageData;
+
+    context.ParseUploadModelData(onnxFile, modelName);
+    context.ForceCPUSync();
+    context.Prepare();
+
+    context.InitializeNewModel(modelName);
+    //context.ForceCPUSync();
+    context.Prepare();
+
+    context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input0", modelInput0.Get()}, { "input1", modelInput1.Get() }, { "input2", modelInput2.Get() }  }, modelOutput.Get(), modelName);
+    context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
+    context.ForceCPUSync();
+
+    context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
+}
+
+void INTest0() {
+    std::vector<uint16_t> inputData;
+
+    std::vector<uint16_t> inputDataScale = { Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f) };
+    std::vector<uint16_t> inputDataBias = { Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f) };
+
+
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(-1.0f));
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(0.3f));
+    inputData.push_back(Float16Compressor::compress(0.4f));
+    inputData.push_back(Float16Compressor::compress(0.8f));
+    inputData.push_back(Float16Compressor::compress(0.2f));
+    inputData.push_back(Float16Compressor::compress(0.3f));
+    inputData.push_back(Float16Compressor::compress(0.4f));
+    /*inputData.push_back(Float16Compressor::compress(0.8f));
+    inputData.push_back(Float16Compressor::compress(0.1f));
+    inputData.push_back(Float16Compressor::compress(0.2f));
+    inputData.push_back(Float16Compressor::compress(0.9f));*/
+    
+    UnitTest3Params(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/InstanceNormalizationTest0-fp16-7.onnx", "TestIN",
+        8 * sizeof(uint16_t), 2 * sizeof(uint16_t), 8 * sizeof(uint16_t), inputData, inputDataScale, inputDataBias, cpuImageData);
+    for (int i = 0; i < 8; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
 void ReluTest0() {
     std::vector<uint16_t> inputData;
     std::vector<uint16_t> cpuImageData;
@@ -618,6 +685,7 @@ int main() {
     //UpsampleTest0();
     //UpsampleTest3();
     //CastTest0();
-    CastTest1();
+    //CastTest1();
+    INTest0();
     return 0;
 }
