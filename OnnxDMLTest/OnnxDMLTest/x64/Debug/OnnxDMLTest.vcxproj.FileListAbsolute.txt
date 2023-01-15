@@ -1,0 +1,4 @@
+D:\UGit\OnnxDMLPlugin\OnnxDMLTest\x64\Debug\DirectML.dll
+D:\UGit\OnnxDMLPlugin\OnnxDMLTest\x64\Debug\DirectML.pdb
+D:\UGit\OnnxDMLPlugin\OnnxDMLTest\x64\Debug\DirectML.Debug.dll
+D:\UGit\OnnxDMLPlugin\OnnxDMLTest\x64\Debug\DirectML.Debug.pdb

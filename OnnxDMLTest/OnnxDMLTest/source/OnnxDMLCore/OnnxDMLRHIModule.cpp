@@ -386,10 +386,11 @@ namespace ODI {
                     dml::TensorDimensions inputShape = inputExpresion.GetOutputDesc().sizes;
 
                     auto shapeByteSize = inputShape.size() * sizeof(UINT32);
+                    auto alignedByteSize = ONNX_PARSER::GetAlignedBytes(shapeByteSize);
                     auto prevStride = dmlWeights.size();
-                    // TODO: handling extra weights
+                    
                     weightsBinding.push_back(ONNX_PARSER::BindingInfo(prevStride, shapeByteSize));
-                    dmlWeights.resize(prevStride + shapeByteSize);
+                    dmlWeights.resize(prevStride + alignedByteSize);
                     memcpy(dmlWeights.data() + prevStride, inputShape.data(), shapeByteSize);
                     expressionMap[graphNodeKey] = dml::InputTensor(graph, currentInputIndex,
                         dml::TensorDesc(static_cast<DML_TENSOR_DATA_TYPE>(ONNX_PARSER::TensorType::UINT32), flags, dml::TensorDimensions{ static_cast<uint32_t>(inputShape.size()) }, policy));
@@ -423,7 +424,7 @@ namespace ODI {
 
         }
 
-        { // create and upload resource; DML input only supports resource on default heap
+        if (dmlWeights.size() > 0){ // create and upload resource; DML input only supports resource on default heap
             D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(dmlWeights.size(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
             CD3DX12_RANGE readRange(0, 0);
@@ -617,10 +618,11 @@ namespace ODI {
 
 
         int inputIndex = 0;
+        std::vector<DML_BUFFER_BINDING> bufferBindings(modelInputs.size());
         for (auto& input : modelInputs) { // because std::map is sorted
             auto resourcePointer = input.second;
-            auto bufferBindings = DML_BUFFER_BINDING{ resourcePointer };
-            currOnnxInfo.inputBindings[inputIndex] = { DML_BINDING_TYPE_BUFFER, &bufferBindings };
+            bufferBindings[inputIndex] = DML_BUFFER_BINDING{ resourcePointer };
+            currOnnxInfo.inputBindings[inputIndex] = { DML_BINDING_TYPE_BUFFER, &bufferBindings[inputIndex] };
 
             inputIndex += 1;
         }
