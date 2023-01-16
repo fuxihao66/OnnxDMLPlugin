@@ -417,9 +417,9 @@ namespace ODI {
 
             DML_EXECUTION_FLAGS executionFlags = DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION;
 
-            std::array<dml::Expression, 1> outputArr;
-            std::copy_n(outputExpression.begin(), modelOutputNum, outputArr.begin());
-            currOnnxInfo.dmlGraph = graph.Compile(executionFlags, outputArr).Get();
+            /*std::array<dml::Expression, 1> outputArr;
+            std::copy_n(outputExpression.begin(), modelOutputNum, outputArr.begin());*/
+            currOnnxInfo.dmlGraph = graph.Compile(executionFlags, std::array<dml::Expression, 1>{ outputExpression[0] });
 
 
         }
@@ -609,6 +609,9 @@ namespace ODI {
     }*/
 
     void D3D12RHIContext::RunDMLInfer(const std::map<std::string, ID3D12Resource*> modelInputs, ID3D12Resource* modelOutput, const std::string& modelName) {
+        ID3D12DescriptorHeap* pHeaps[] = { m_dmlDescriptorHeap->Heap() };
+        m_commandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
+        
         auto& currOnnxInfo = m_modelNameToResourceInfo[modelName];
 
         auto modelInputNum = currOnnxInfo.modelInputNum;
@@ -621,7 +624,7 @@ namespace ODI {
         std::vector<DML_BUFFER_BINDING> bufferBindings(modelInputs.size());
         for (auto& input : modelInputs) { // because std::map is sorted
             auto resourcePointer = input.second;
-            bufferBindings[inputIndex] = DML_BUFFER_BINDING{ resourcePointer };
+            bufferBindings[inputIndex] = DML_BUFFER_BINDING{ resourcePointer }; // TODO: buffer size might be larger than tensor size (because buffer is 16 byte aligned)
             currOnnxInfo.inputBindings[inputIndex] = { DML_BINDING_TYPE_BUFFER, &bufferBindings[inputIndex] };
 
             inputIndex += 1;
@@ -629,11 +632,8 @@ namespace ODI {
         
         dmlBindingTable->BindInputs(currOnnxInfo.inputBindings.size(), currOnnxInfo.inputBindings.data());
 
-        DML_BUFFER_BINDING outputBinding = { modelOutput, 0, modelOutput->GetDesc().Width };
+        DML_BUFFER_BINDING outputBinding = { modelOutput, 0, modelOutput->GetDesc().Width }; // TODO: buffer size might be larger than tensor size (because buffer is 16 byte aligned)
         dmlBindingTable->BindOutputs(1, &DML_BINDING_DESC{ DML_BINDING_TYPE_BUFFER, &outputBinding });
-
-        ID3D12DescriptorHeap* pHeaps[] = { m_dmlDescriptorHeap->Heap() };
-        m_commandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
         m_dmlCommandRecorder->RecordDispatch(m_commandList.Get(), dmlGraph.Get(), dmlBindingTable.Get());
 
@@ -665,8 +665,9 @@ namespace ODI {
     void D3D12RHIContext::CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte) {
         CD3DX12_RANGE readRange(0, 0);
 
-        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInByte, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
+        /*D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC(D3D12_RESOURCE_DIMENSION_BUFFER, 0, bufferSizeInByte, 1, 1, 1, DXGI_FORMAT_R16_FLOAT, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);*/
+        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(ONNX_PARSER::GetAlignedBytes(bufferSizeInByte), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
         m_d3dDevice->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
@@ -707,7 +708,8 @@ namespace ODI {
         if (needReadBack)
             resourceFlag = D3D12_RESOURCE_FLAG_NONE;
 
-        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSizeInByte, resourceFlag);
+        /*D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC(D3D12_RESOURCE_DIMENSION_BUFFER, 0, bufferSizeInByte, 1, 1, 1, DXGI_FORMAT_R16_FLOAT, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, resourceFlag);*/
+        D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(ONNX_PARSER::GetAlignedBytes(bufferSizeInByte), resourceFlag);
 
 
         CD3DX12_RANGE readRange(0, 0);

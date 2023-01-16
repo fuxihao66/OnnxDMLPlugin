@@ -347,6 +347,34 @@ void INTest0() {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
     }
 }
+void INTest1() {
+    std::vector<uint16_t> inputData;
+
+    std::vector<uint16_t> inputDataScale = { Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f) };
+    std::vector<uint16_t> inputDataBias = { Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f), Float16Compressor::compress(0.4f) };
+
+
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(-1.0f));
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(0.3f));
+    inputData.push_back(Float16Compressor::compress(0.4f));
+    inputData.push_back(Float16Compressor::compress(0.8f));
+    inputData.push_back(Float16Compressor::compress(0.2f));
+    inputData.push_back(Float16Compressor::compress(0.3f));
+    inputData.push_back(Float16Compressor::compress(0.4f));
+    inputData.push_back(Float16Compressor::compress(0.8f));
+    inputData.push_back(Float16Compressor::compress(0.1f));
+    inputData.push_back(Float16Compressor::compress(0.2f));
+    inputData.push_back(Float16Compressor::compress(0.9f));
+
+    UnitTest3Params(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/InstanceNormalizationTest1-fp16-7.onnx", "TestIN",
+        12 * sizeof(uint16_t), 3 * sizeof(uint16_t), 12 * sizeof(uint16_t), inputData, inputDataScale, inputDataBias, cpuImageData);
+    for (int i = 0; i < 12; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
 void ReluTest0() {
     std::vector<uint16_t> inputData;
     std::vector<uint16_t> cpuImageData;
@@ -686,6 +714,7 @@ int main() {
     //UpsampleTest3();
     //CastTest0();
     //CastTest1();
-    INTest0();
+    //INTest0();
+    INTest1();
     return 0;
 }
