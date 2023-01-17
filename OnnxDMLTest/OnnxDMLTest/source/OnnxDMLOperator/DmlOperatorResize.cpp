@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 //#include "precomp.h"
@@ -375,8 +375,13 @@ public:
             if (opsetVersion == 9){
                 ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR);
                 if (attriWrapper.isValid()) {
-                    scales.resize(attriWrapper.getValue().size() / sizeof(uint16_t)); //TODO: all tensor is converted to half
-                    memcpy(scales.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                    std::vector<uint16_t> scales_fp16;
+                    scales.resize(attriWrapper.getValue().size() / sizeof(uint16_t)); //TODO: 所有的tensor都转为fp16了，所以这里读到的是fp16，但是当成fp32直接memcpy了
+                    scales_fp16.resize(scales.size());
+                    memcpy(scales_fp16.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
+                    for (int i = 0; i < scales.size(); i++) {
+                        scales[i] = Float16Compressor::decompress(scales_fp16[i]);
+                    }
                 }
                 else {
                     assert(false);

@@ -84,3 +84,4 @@
 
 #include "../Common/Common.h"
 #include "../Common/OnnxParser.h"
+#include "Common/Float16Compressor.h"

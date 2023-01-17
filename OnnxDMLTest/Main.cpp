@@ -710,11 +710,11 @@ int main() {
     //ConcatTest1();
     //ConcatTest2();
     //ConcatTest3();
-    //UpsampleTest0();
+    UpsampleTest0();
     //UpsampleTest3();
     //CastTest0();
     //CastTest1();
     //INTest0();
-    INTest1();
+    //INTest1();
     return 0;
 }
