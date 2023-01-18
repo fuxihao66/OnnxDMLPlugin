@@ -451,7 +451,7 @@ void UpsampleTest0() {
     inputData.push_back(Float16Compressor::compress(1.0f));
     inputData.push_back(Float16Compressor::compress(0.3f));
     inputData.push_back(Float16Compressor::compress(0.4f));
-    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/UpsampleTest0-fp16-9.onnx", "TestUpsample",
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/UpsampleTest0-9.onnx", "TestUpsample",
         4 * sizeof(uint16_t), 6 * sizeof(uint16_t), inputData, cpuImageData);
     for (int i = 0; i < 6; i++) {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
@@ -466,7 +466,7 @@ void UpsampleTest1() {
     inputData.push_back(Float16Compressor::compress(1.0f));
     inputData.push_back(Float16Compressor::compress(0.3f));
     inputData.push_back(Float16Compressor::compress(0.4f));
-    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/UpsampleTest1-fp16-9.onnx", "TestUpsample",
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/UpsampleTest1-9.onnx", "TestUpsample",
         4 * sizeof(uint16_t), 6 * sizeof(uint16_t), inputData, cpuImageData);
     for (int i = 0; i < 6; i++) {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
@@ -481,7 +481,7 @@ void UpsampleTest2() {
     inputData.push_back(Float16Compressor::compress(2.0f));
     inputData.push_back(Float16Compressor::compress(3.0f));
     inputData.push_back(Float16Compressor::compress(4.0f));
-    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/UpsampleTest2-fp16-9.onnx", "TestUpsample",
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/UpsampleTest2-9.onnx", "TestUpsample",
         4 * sizeof(uint16_t), 6 * sizeof(uint16_t), inputData, cpuImageData);
     for (int i = 0; i < 6; i++) {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
@@ -504,7 +504,7 @@ void UpsampleTest3() {
     inputData.push_back(Float16Compressor::compress(0.2f));
     inputData.push_back(Float16Compressor::compress(0.5f));
     inputData.push_back(Float16Compressor::compress(0.4f));
-    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/UpsampleTest3-fp16-9.onnx", "TestUpsample",
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/UpsampleTest3-9.onnx", "TestUpsample",
         12 * sizeof(uint16_t), 48 * sizeof(uint16_t), inputData, cpuImageData);
     for (int i = 0; i < 48; i++) {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";

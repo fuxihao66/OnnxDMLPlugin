@@ -375,13 +375,25 @@ public:
             if (opsetVersion == 9){
                 ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("scales", ONNX_PARSER::AttributeType::TENSOR);
                 if (attriWrapper.isValid()) {
-                    std::vector<uint16_t> scales_fp16;
-                    scales.resize(attriWrapper.getValue().size() / sizeof(uint16_t)); //TODO: 所有的tensor都转为fp16了，所以这里读到的是fp16，但是当成fp32直接memcpy了
-                    scales_fp16.resize(scales.size());
-                    memcpy(scales_fp16.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
-                    for (int i = 0; i < scales.size(); i++) {
-                        scales[i] = Float16Compressor::decompress(scales_fp16[i]);
+                    auto byteStride = attriWrapper.getByteStride();
+                    scales.resize(attriWrapper.getValue().size() / byteStride);
+
+                    if (byteStride == 4) {// fp32
+                        const float* attriDataPtr = reinterpret_cast<const float*>(attriWrapper.getValue().data());
+                        for (int i = 0; i < scales.size(); i++) {
+                            scales[i] = attriDataPtr[i];
+                        }
                     }
+                    else if (byteStride == 2) {// fp16
+                        const uint16_t* attriDataPtr = reinterpret_cast<const uint16_t*>(attriWrapper.getValue().data());
+                        for (int i = 0; i < scales.size(); i++) {
+                            scales[i] = Float16Compressor::decompress(attriDataPtr[i]);
+                        }
+                    }
+                    else {
+                        assert(false);
+                    }
+
                 }
                 else {
                     assert(false);
