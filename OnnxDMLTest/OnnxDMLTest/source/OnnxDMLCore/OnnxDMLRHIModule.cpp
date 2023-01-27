@@ -421,10 +421,12 @@ namespace ODI {
             std::copy_n(outputExpression.begin(), modelOutputNum, outputArr.begin());*/
             currOnnxInfo.dmlGraph = graph.Compile(executionFlags, std::array<dml::Expression, 1>{ outputExpression[0] });
 
+            
+            //graph.GetGraphDesc
 
         }
 
-        if (dmlWeights.size() > 0){ // create and upload resource; DML input only supports resource on default heap
+        if (dmlWeights.size() > 0){ // TODO: dont need to be on default heap, DML supports resource on upload heap if tensor is owned by DML
             D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(dmlWeights.size(), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
             CD3DX12_RANGE readRange(0, 0);

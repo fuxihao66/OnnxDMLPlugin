@@ -443,6 +443,44 @@ void CastTest1() {
     }
 }
 
+void ConvTest0() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    std::vector<uint8_t> jpgInputData;
+    int width, height;
+    LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
+
+    Uint8ToHalfCHW(jpgInputData, inputData, width, height);
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/ConvTest0-fp16-11.onnx", "TestConv",
+        224 * 224 * 3 * sizeof(uint16_t), 224 * 224 * 3 * sizeof(uint16_t), inputData, cpuImageData);
+    
+
+    std::vector<uint8_t> jpgOutputData;
+
+    HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
+    SaveImageToFile(jpgOutputData, "ConvTestOutput.png", width, height);
+}
+
+void ConvTest1() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    std::vector<uint8_t> jpgInputData;
+    int width, height;
+    LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
+
+    Uint8ToHalfCHW(jpgInputData, inputData, width, height);
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/ConvTest0-7.onnx", "TestConv",
+        224 * 224 * 3 * sizeof(uint16_t), 224 * 224 * 3 * sizeof(uint16_t), inputData, cpuImageData);
+
+
+    std::vector<uint8_t> jpgOutputData;
+
+    HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
+    SaveImageToFile(jpgOutputData, "ConvTestOutput.png", width, height);
+}
+
 void UpsampleTest0() {
     std::vector<uint16_t> inputData;
     std::vector<uint16_t> cpuImageData;
@@ -710,11 +748,13 @@ int main() {
     //ConcatTest1();
     //ConcatTest2();
     //ConcatTest3();
-    UpsampleTest0();
+    //UpsampleTest0();
     //UpsampleTest3();
     //CastTest0();
     //CastTest1();
     //INTest0();
     //INTest1();
+    //ConvTest0();
+    ConvTest1();
     return 0;
 }
