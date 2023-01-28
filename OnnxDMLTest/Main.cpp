@@ -105,6 +105,7 @@ void testModel()
 
 }
 
+
 void testGather0() {
     ODI::D3D12RHIContext context;
 
@@ -131,7 +132,8 @@ void testGather0() {
     context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
     std::vector<uint16_t> cpuImageData;
 
-    context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/GatherTest0-fp16-13.onnx", "GatherTest");
+    //context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/GatherTest0-fp16-13.onnx", "GatherTest");
+    context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/GatherTest0-13.onnx", "GatherTest");
     context.ForceCPUSync();
     context.Prepare();
 
@@ -150,7 +152,7 @@ void testGather0() {
     }
 }
 
-void testGather1() {
+void testGather1(bool useFp16) {
     ODI::D3D12RHIContext context;
 
     Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload; //TODO: input and output requires alignment?
@@ -178,7 +180,10 @@ void testGather1() {
     context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
     std::vector<uint16_t> cpuImageData;
 
-    context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/GatherTest1-fp16-13.onnx", "GatherTest");
+    if (useFp16)
+        context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/GatherTest1-fp16-13.onnx", "GatherTest");
+    else
+        context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/GatherTest1-13.onnx", "GatherTest");
     context.ForceCPUSync();
     context.Prepare();
 
@@ -191,8 +196,60 @@ void testGather1() {
     context.ForceCPUSync();
 
     context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
-    // output should be [0.4f, 0.2f, 0.4f, 0.1f, 0.3f]
     for (int i = 0; i < 8; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+
+void testGather2(bool useFp16) {
+    ODI::D3D12RHIContext context;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInputUpload; //TODO: input and output requires alignment?
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
+
+    std::vector<uint16_t> inputData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(1.2f));
+    inputData.push_back(Float16Compressor::compress(1.9f));
+    inputData.push_back(Float16Compressor::compress(2.3f));
+    inputData.push_back(Float16Compressor::compress(3.4f));
+    inputData.push_back(Float16Compressor::compress(3.9f));
+    inputData.push_back(Float16Compressor::compress(4.5f));
+    inputData.push_back(Float16Compressor::compress(5.7f));
+    inputData.push_back(Float16Compressor::compress(5.9f));
+
+    auto inputSize = 9 * sizeof(uint16_t);
+    auto outputSize = 6 * sizeof(uint16_t);
+
+    context.Prepare(); // reset command list
+
+    //context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+    context.CreateBufferFromDataSubresource(modelInput, modelInputUpload, inputData, inputSize); // make sure model input is on default heap
+    context.CreateBufferFromData(modelOutput, std::nullopt, outputSize);
+    context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
+    std::vector<uint16_t> cpuImageData;
+
+    if (useFp16)
+        context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/GatherTest2-fp16-13.onnx", "GatherTest");
+    else
+        context.ParseUploadModelData(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/GatherTest2-13.onnx", "GatherTest");
+
+    context.ForceCPUSync();
+    context.Prepare();
+
+    context.InitializeNewModel("GatherTest");
+    //context.ForceCPUSync();
+    context.Prepare();
+
+    context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), "GatherTest");
+    context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
+    context.ForceCPUSync();
+
+    context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
+    for (int i = 0; i < 6; i++) {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
     }
 }
@@ -375,6 +432,96 @@ void INTest1() {
         std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
     }
 }
+
+void PadTest0() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(1.2f));
+    inputData.push_back(Float16Compressor::compress(2.3f));
+    inputData.push_back(Float16Compressor::compress(3.4f));
+    inputData.push_back(Float16Compressor::compress(4.5f));
+    inputData.push_back(Float16Compressor::compress(5.7f));
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest0-fp16-13.onnx", "TestPad",
+    //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/PadTest0-7.onnx", "TestPad",
+    //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest0-fp16-7.onnx", "TestPad",
+        6 * sizeof(uint16_t), 12 * sizeof(uint16_t), inputData, cpuImageData);
+    for (int i = 0; i < 12; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+void PadTest1() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(1.2f));
+    inputData.push_back(Float16Compressor::compress(2.3f));
+    inputData.push_back(Float16Compressor::compress(3.4f));
+    inputData.push_back(Float16Compressor::compress(4.5f));
+    inputData.push_back(Float16Compressor::compress(5.7f));
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest1-fp16-13.onnx", "TestPad",
+    //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest1-fp16-7.onnx", "TestPad",
+        6 * sizeof(uint16_t), 12 * sizeof(uint16_t), inputData, cpuImageData);
+    for (int i = 0; i < 12; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+void PadTest2() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(1.2f));
+    inputData.push_back(Float16Compressor::compress(2.3f));
+    inputData.push_back(Float16Compressor::compress(3.4f));
+    inputData.push_back(Float16Compressor::compress(4.5f));
+    inputData.push_back(Float16Compressor::compress(5.7f));
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest2-fp16-13.onnx", "TestPad",
+    //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest2-fp16-7.onnx", "TestPad",
+        6 * sizeof(uint16_t), 12 * sizeof(uint16_t), inputData, cpuImageData);
+    for (int i = 0; i < 12; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+void SliceTest0() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(2.0f));
+    inputData.push_back(Float16Compressor::compress(3.0f));
+    inputData.push_back(Float16Compressor::compress(4.0f));
+    inputData.push_back(Float16Compressor::compress(5.0f));
+    inputData.push_back(Float16Compressor::compress(6.0f));
+    inputData.push_back(Float16Compressor::compress(7.0f));
+    inputData.push_back(Float16Compressor::compress(8.0f));
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/SliceTest0-fp16-10.onnx", "TestSlice",
+        8 * sizeof(uint16_t), 2 * sizeof(uint16_t), inputData, cpuImageData);
+    for (int i = 0; i < 2; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+void SliceTest1() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    inputData.push_back(Float16Compressor::compress(1.0f));
+    inputData.push_back(Float16Compressor::compress(2.0f));
+    inputData.push_back(Float16Compressor::compress(3.0f));
+    inputData.push_back(Float16Compressor::compress(4.0f));
+    inputData.push_back(Float16Compressor::compress(5.0f));
+    inputData.push_back(Float16Compressor::compress(6.0f));
+    inputData.push_back(Float16Compressor::compress(7.0f));
+    inputData.push_back(Float16Compressor::compress(8.0f));
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/SliceTest1-fp16-10.onnx", "TestSlice",
+        8 * sizeof(uint16_t), 3 * sizeof(uint16_t), inputData, cpuImageData);
+    for (int i = 0; i < 3; i++) {
+        std::cout << Float16Compressor::decompress(cpuImageData[i]) << " ";
+    }
+}
+
 void ReluTest0() {
     std::vector<uint16_t> inputData;
     std::vector<uint16_t> cpuImageData;
@@ -739,7 +886,8 @@ int main() {
     //testReadBack();
     //testModel();
     //testGather0();
-    //testGather1();
+    testGather1(true);
+    //testGather2(false);
     //ReluTest0();
     //ReluTest1();
     //AddTest0();
@@ -755,6 +903,11 @@ int main() {
     //INTest0();
     //INTest1();
     //ConvTest0();
-    ConvTest1();
+    //ConvTest1();
+    //SliceTest0();
+    //SliceTest1();
+    //PadTest0();
+    //PadTest1();
+    //PadTest2();
     return 0;
 }

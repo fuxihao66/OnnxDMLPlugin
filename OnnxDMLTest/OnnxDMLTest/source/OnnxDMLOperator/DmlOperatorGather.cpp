@@ -24,8 +24,6 @@ public:
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         dml::TensorDimensions indicesShape = m_indices.GetOutputDesc().sizes;
         
-        
-
         int tempaxis;
         {
             //std::vector<char> temp;

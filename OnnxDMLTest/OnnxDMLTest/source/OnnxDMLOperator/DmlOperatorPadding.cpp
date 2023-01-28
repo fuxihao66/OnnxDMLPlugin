@@ -56,7 +56,7 @@ public:
 
             ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("pads", ONNX_PARSER::AttributeType::TENSOR);
             if (attriWrapper.isValid()){
-                paddings.resize(attriWrapper.getValue().size() / 4);
+                paddings.resize(attriWrapper.getValue().size() / sizeof(int64_t));
                 memcpy(paddings.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
             }
             else {
