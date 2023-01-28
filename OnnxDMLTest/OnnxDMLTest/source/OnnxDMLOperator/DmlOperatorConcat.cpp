@@ -10,7 +10,7 @@ namespace ODI
 class DmlOperatorConcat 
 {
 public:
-    DmlOperatorConcat(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorConcat(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() <= 1)
             assert(false);  // 
@@ -18,6 +18,9 @@ public:
         
         for (auto & inputName : node.inputNames ){
             m_inputs.push_back(expressionMap[inputName]);
+
+            CheckReference(initializerMap, inputName);
+
         }
 
         dml::TensorDimensions inputShape = m_inputs[0].GetOutputDesc().sizes;

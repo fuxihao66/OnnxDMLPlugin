@@ -66,7 +66,7 @@ class DmlOperatorConstant// : public DmlOperator, public ConstantOfShapeHelper
 {
 public:
     DmlOperatorConstant() = default;
-    DmlOperatorConstant(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorConstant(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         // 
         m_constant = expressionMap[node.outputName];

@@ -13,7 +13,7 @@ public:
     using Self = DmlOperatorConvolution;
 
     DmlOperatorConvolution(
-        std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion )
+        std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion )
     // :   DmlOperator(kernelInfo),
         // ConvolutionHelperBase(kernelInfo, kernelInfo.GetTensorShapeDescription(), direction == DML_CONVOLUTION_DIRECTION_BACKWARD, hasDynamicPads, 0, 1)
     {
@@ -25,6 +25,10 @@ public:
         m_input = expressionMap[inputName];
         m_weight = expressionMap[weightName];
 
+        CheckReference(initializerMap, inputName);
+        CheckReference(initializerMap, weightName);
+
+
         if (node.inputNames.size() == 2){
             // hasBias = false;
             m_bias = std::nullopt;
@@ -32,6 +36,7 @@ public:
         else{
             auto& biasName = node.inputNames[2];
             auto tempBias = expressionMap[biasName];
+            CheckReference(initializerMap, biasName);
 
             if (tempBias.GetOutputDesc().sizes.size() == 1)
                 m_bias = std::optional(dml::Reinterpret(tempBias, dml::TensorDimensions{ 1, tempBias.GetOutputDesc().sizes[0], 1, 1 }, std::nullopt));

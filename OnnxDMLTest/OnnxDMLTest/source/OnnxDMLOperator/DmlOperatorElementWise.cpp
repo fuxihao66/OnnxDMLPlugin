@@ -97,7 +97,7 @@ template <DML_OPERATOR_TYPE TOperatorType, typename TOperatorDesc>
 class DmlOperatorElementwiseBinary 
 {
 public:
-    DmlOperatorElementwiseBinary(std::map<std::string, dml::Expression>& expressionMap, 
+    DmlOperatorElementwiseBinary(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,
                                  ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 2)
@@ -105,6 +105,9 @@ public:
 
         m_input0 = expressionMap[node.inputNames[0]];
         m_input1 = expressionMap[node.inputNames[1]];
+
+        CheckReference(initializerMap, node.inputNames[0]);
+        CheckReference(initializerMap, node.inputNames[1]);
 
         // TODO: ONLY ADD operator supports fused activation
         // std::optional<ActivationOperatorDesc> fusedActivation = FusionHelpers::TryGetFusedActivationDesc(kernelInfo);

@@ -12,7 +12,7 @@ namespace ODI
 class DmlOperatorGather 
 {
 public:
-    DmlOperatorGather(std::map<std::string, dml::Expression>& expressionMap, 
+    DmlOperatorGather(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,
                       ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 2)
@@ -20,6 +20,8 @@ public:
 
         m_input = expressionMap[node.inputNames[0]];
         m_indices = expressionMap[node.inputNames[1]];
+        CheckReference(initializerMap, node.inputNames[0]);
+        CheckReference(initializerMap, node.inputNames[1]);
 
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         dml::TensorDimensions indicesShape = m_indices.GetOutputDesc().sizes;

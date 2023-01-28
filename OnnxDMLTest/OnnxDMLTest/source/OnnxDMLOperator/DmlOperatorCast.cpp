@@ -13,7 +13,8 @@ public:
     //using Self = DmlOperatorCast;
 
     DmlOperatorCast(
-        std::map<std::string, dml::Expression>& expressionMap, 
+        std::map<std::string, dml::Expression>& expressionMap,
+        std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, 
         ONNX_PARSER::Op& node, 
         dml::Graph& graph,
         unsigned int opsetVersion)
@@ -24,6 +25,7 @@ public:
         auto& inputName = node.inputNames[0];
         m_input = expressionMap[inputName];
 
+        CheckReference(initializerMap, inputName);
 
         { // data type
             int toVal;

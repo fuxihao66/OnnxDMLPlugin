@@ -359,12 +359,14 @@ class DmlOperatorResize //: public DmlOperator, public ResizeHelper
 {
 public:
     // Resample a multidimensional image to a new size.
-    DmlOperatorResize(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorResize(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (opsetVersion > 15)
             assert(false); // TODO: Not supported yet
         
         m_input = expressionMap[node.inputNames[0]];
+        CheckReference(initializerMap, node.inputNames[0]);
+
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
 
         if (node.opType == "Upsample"){

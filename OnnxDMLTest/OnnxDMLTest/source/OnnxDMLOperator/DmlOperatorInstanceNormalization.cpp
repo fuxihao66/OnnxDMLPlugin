@@ -9,13 +9,18 @@ namespace ODI
 class DmlOperatorInstanceNormalization
 {
 public:
-    DmlOperatorInstanceNormalization(std::map<std::string, dml::Expression>& expressionMap, 
+    DmlOperatorInstanceNormalization(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,
                                      ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         m_input = expressionMap[node.inputNames[0]];
         m_weight = expressionMap[node.inputNames[1]];
         m_bias = expressionMap[node.inputNames[2]];
         
+        CheckReference(initializerMap, node.inputNames[0]);
+        CheckReference(initializerMap, node.inputNames[1]);
+        CheckReference(initializerMap, node.inputNames[2]);
+
+
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         weightShape = m_weight.GetOutputDesc().sizes;
         

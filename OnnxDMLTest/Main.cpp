@@ -443,7 +443,8 @@ void PadTest0() {
     inputData.push_back(Float16Compressor::compress(3.4f));
     inputData.push_back(Float16Compressor::compress(4.5f));
     inputData.push_back(Float16Compressor::compress(5.7f));
-    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest0-fp16-13.onnx", "TestPad",
+    //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest0-fp16-13.onnx", "TestPad",
+    UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/PadTest0-13.onnx", "TestPad",
     //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP32/PadTest0-7.onnx", "TestPad",
     //UnitTest(L"D:/UGit/UnitTestOnnxFileGenerator/GeneratedOnnx/FP16/PadTest0-fp16-7.onnx", "TestPad",
         6 * sizeof(uint16_t), 12 * sizeof(uint16_t), inputData, cpuImageData);
@@ -886,7 +887,7 @@ int main() {
     //testReadBack();
     //testModel();
     //testGather0();
-    testGather1(true);
+    //testGather1(true);
     //testGather2(false);
     //ReluTest0();
     //ReluTest1();
@@ -897,7 +898,7 @@ int main() {
     //ConcatTest2();
     //ConcatTest3();
     //UpsampleTest0();
-    //UpsampleTest3();
+    UpsampleTest3();
     //CastTest0();
     //CastTest1();
     //INTest0();

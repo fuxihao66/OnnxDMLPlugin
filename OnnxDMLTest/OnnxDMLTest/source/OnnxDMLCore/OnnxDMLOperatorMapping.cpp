@@ -51,7 +51,7 @@ DML_OP_EXTERN_CREATION_FUNCTION(Unsqueeze);
 
 
 
-using CreateFn = dml::Expression(CALLBACK *)(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion);
+using CreateFn = dml::Expression(CALLBACK *)(std::map<std::string, dml::Expression> &expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion);
 
 static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
     {
@@ -96,9 +96,9 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
         {REG_INFO(Cast)},
 };
 
-dml::Expression CreateExpression(std::map<std::string, dml::Expression> &expressionMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
+dml::Expression CreateExpression(std::map<std::string, dml::Expression> &expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op &node, dml::Graph& graph, unsigned int opsetVersion)
 {
-    return g_operatorRegistrationMap[node.opType](expressionMap, node, graph, opsetVersion);
+    return g_operatorRegistrationMap[node.opType](expressionMap, initializerMap, node, graph, opsetVersion);
 }
 
 }

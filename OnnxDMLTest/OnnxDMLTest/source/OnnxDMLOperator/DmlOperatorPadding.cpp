@@ -10,12 +10,16 @@ namespace ODI
 class DmlOperatorPadding// : public DmlOperator, public PaddingHelper
 {
 public:
-    DmlOperatorPadding(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorPadding(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         const uint32_t inputCount = node.inputNames.size();
         assert((opsetVersion >= 2 && opsetVersion < 11 && inputCount == 1)
                              || (opsetVersion >= 11 && inputCount >= 2 && inputCount <= 3));
+
         m_input = expressionMap[node.inputNames[0]];
+
+        CheckReference(initializerMap, node.inputNames[0]);
+
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
         
         //std::vector<char> tempAttri;

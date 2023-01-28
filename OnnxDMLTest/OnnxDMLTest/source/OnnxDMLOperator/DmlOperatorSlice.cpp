@@ -10,7 +10,7 @@ namespace ODI
 class DmlOperatorSlice //: public DmlOperator, public SliceHelper
 {
 public:
-    DmlOperatorSlice(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorSlice(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     // :   DmlOperator(kernelInfo),
     //     SliceHelper(kernelInfo, kernelInfo.GetTensorShapeDescription(), opsetVersion)
     {
@@ -19,6 +19,8 @@ public:
                              || (opsetVersion >= 10 && inputCount >= 3 && inputCount <= 5));
 
         m_input = expressionMap[node.inputNames[0]];
+        CheckReference(initializerMap, node.inputNames[0]);
+
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
 
         std::vector<int> steps;

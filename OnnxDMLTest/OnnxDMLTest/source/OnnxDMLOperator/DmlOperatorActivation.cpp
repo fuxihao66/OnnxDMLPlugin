@@ -38,7 +38,7 @@ class DmlOperatorActivation
 {
 public:
     DmlOperatorActivation(
-        std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
+        std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion
         )
     {
         //std::vector<char> attribVal;
@@ -169,6 +169,10 @@ public:
         
 
         m_input = expressionMap[node.inputNames[0]];
+
+        CheckReference(initializerMap, node.inputNames[0]);
+
+
         dml::detail::GraphBuilder* builder = m_input.Impl()->GetGraphBuilder();
 
         inputTensor = m_input.Impl()->GetOutputDesc();
@@ -177,6 +181,9 @@ public:
         if (operatorType == DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU)
         {
             *m_slope = expressionMap[node.inputNames[1]];
+
+            CheckReference(initializerMap, node.inputNames[1]);
+
             dml::TensorDesc slopeTensor = m_slope->Impl()->GetOutputDesc();
 
             operatorDesc.parameterizedRelu.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();

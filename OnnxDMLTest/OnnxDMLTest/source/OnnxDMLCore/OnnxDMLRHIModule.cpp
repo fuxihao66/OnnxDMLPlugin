@@ -383,7 +383,11 @@ namespace ODI {
                 auto& opNode = graphNodes[graphNodeKey];
                 if (opNode.opType == "Shape") { // not supported by DML, only STATIC GRAPH is supported right now
                     auto& inputExpresion = expressionMap[opNode.inputNames[0]];
+
                     dml::TensorDimensions inputShape = inputExpresion.GetOutputDesc().sizes;
+
+                    graphInitializers[graphNodeKey] = ONNX_PARSER::InitializerTensorInfo(graphNodeKey, 1, ONNX_PARSER::TensorType::UINT32, currentInputIndex);
+                    graphInitializers[graphNodeKey].SetShape(0, inputShape.size());
 
                     auto shapeByteSize = inputShape.size() * sizeof(UINT32);
                     auto alignedByteSize = ONNX_PARSER::GetAlignedBytes(shapeByteSize);
@@ -397,11 +401,16 @@ namespace ODI {
                     currentInputIndex += 1;
                 }
                 else {
-                    auto expression = CreateExpression(expressionMap, opNode, graph, opsetVersion);
+                    auto expression = CreateExpression(expressionMap, graphInitializers, opNode, graph, opsetVersion);
                     expressionMap[graphNodeKey] = expression;
                 }
 
             }
+
+            for (auto it = graphInitializers.begin(); it != graphInitializers.end(); it++) {
+                weightsBinding[it->second.index].SetShouldBind(it->second.referredByDml);
+            }
+
 
             currOnnxInfo.weightsBinding = weightsBinding;
 
@@ -561,8 +570,10 @@ namespace ODI {
         
         std::vector<DML_BUFFER_BINDING> bufferBindings(weightsBinding.size() + modelInputNum);
         for (int i = modelInputNum; i < bufferBindings.size(); i++) {
-            bufferBindings[i] = { currOnnxInfo.modelOperatorWeights.Get(), weightsBinding[i - modelInputNum].stride, weightsBinding[i - modelInputNum].byteSize };
 
+            auto& bindingInfo = weightsBinding[i - modelInputNum];
+            if (bindingInfo.GetShouldBind())
+                bufferBindings[i] = { currOnnxInfo.modelOperatorWeights.Get(), bindingInfo.stride, bindingInfo.byteSize };
             currOnnxInfo.inputBindings[i] = DML_BINDING_DESC{ DML_BINDING_TYPE_NONE, nullptr };
         }
 

@@ -5,11 +5,14 @@ namespace ODI
 class DmlOperatorUnsqueeze
 {
 public:
-    DmlOperatorUnsqueeze(std::map<std::string, dml::Expression>& expressionMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+    DmlOperatorUnsqueeze(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap, ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
     {
         if (node.inputNames.size() != 1)
             throw std::exception("Unsqueeze parameter number must be 1!");
         auto & inputName = node.inputNames[0];
+
+        CheckReference(initializerMap, inputName);
+
         if (expressionMap.count(inputName) == 0){
             throw std::exception("Dependency does not meet! Please check topological sorting!");
         }
