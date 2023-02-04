@@ -10,6 +10,31 @@
 #include "OnnxDMLCore/OnnxDMLRHIModule.h"
 // #include "OnnxParser.h"
 
+void Uint8ToHalfCHWWithoutNormalization(const std::vector<uint8_t>& input, std::vector<uint16_t>& output, int width, int height) {
+    output.resize(input.size());
+
+    int index = 0;
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                output[index++] = Float16Compressor::compress((float)input[y * width * 3 + x * 3 + c]);
+            }
+        }
+    }
+}
+void HalfCHW2Uint8WithoutNormalization(const std::vector<uint16_t>& input, std::vector<uint8_t>& output, int width, int height) {
+    output.resize(input.size());
+
+    int index = 0;
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                output[y * width * 3 + x * 3 + c] = static_cast<uint8_t>(Float16Compressor::decompress(input[index++]));
+            }
+        }
+    }
+}
+
 void Uint8ToHalfCHW(const std::vector<uint8_t>& input, std::vector<uint16_t>& output, int width, int height){
     output.resize(input.size());
 
@@ -892,14 +917,14 @@ void FinalTest() {
     int width, height;
     LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
 
-    Uint8ToHalfCHW(jpgInputData, inputData, width, height);
+    Uint8ToHalfCHWWithoutNormalization(jpgInputData, inputData, width, height);
     UnitTest(L"../model/optimized-candy-9.onnx", "FinalTest",
         224 * 224 * 3 * sizeof(uint16_t), 224 * 224 * 3 * sizeof(uint16_t), inputData, cpuImageData);
 
 
     std::vector<uint8_t> jpgOutputData;
 
-    HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
+    HalfCHW2Uint8WithoutNormalization(cpuImageData, jpgOutputData, width, height);
     SaveImageToFile(jpgOutputData, "FinalTestOutput.png", width, height);
 }
 
