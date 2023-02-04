@@ -23,6 +23,7 @@ public:
 
         }
 
+
         dml::TensorDimensions inputShape = m_inputs[0].GetOutputDesc().sizes;
 
         int tempaxis;

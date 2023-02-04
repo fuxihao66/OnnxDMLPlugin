@@ -883,6 +883,26 @@ void testReadBack() // legacy, fail
 
 }
 
+
+void FinalTest() {
+    std::vector<uint16_t> inputData;
+    std::vector<uint16_t> cpuImageData;
+
+    std::vector<uint8_t> jpgInputData;
+    int width, height;
+    LoadImageFromFile(jpgInputData, "../data/testimg.jpg", width, height);
+
+    Uint8ToHalfCHW(jpgInputData, inputData, width, height);
+    UnitTest(L"../model/optimized-candy-9.onnx", "FinalTest",
+        224 * 224 * 3 * sizeof(uint16_t), 224 * 224 * 3 * sizeof(uint16_t), inputData, cpuImageData);
+
+
+    std::vector<uint8_t> jpgOutputData;
+
+    HalfCHW2Uint8(cpuImageData, jpgOutputData, width, height);
+    SaveImageToFile(jpgOutputData, "FinalTestOutput.png", width, height);
+}
+
 int main() {
     //testReadBack();
     //testModel();
@@ -898,7 +918,7 @@ int main() {
     //ConcatTest2();
     //ConcatTest3();
     //UpsampleTest0();
-    UpsampleTest3();
+    //UpsampleTest3();
     //CastTest0();
     //CastTest1();
     //INTest0();
@@ -910,5 +930,8 @@ int main() {
     //PadTest0();
     //PadTest1();
     //PadTest2();
+
+    FinalTest();
+
     return 0;
 }

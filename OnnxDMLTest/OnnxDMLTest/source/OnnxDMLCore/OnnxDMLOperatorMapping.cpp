@@ -35,6 +35,7 @@ DML_OP_EXTERN_CREATION_FUNCTION(Pad);
 // DML_OP_EXTERN_CREATION_FUNCTION(Pad7);
 // DML_OP_EXTERN_CREATION_FUNCTION(Pad11);
 // DML_OP_EXTERN_CREATION_FUNCTION(Pad13);
+DML_OP_EXTERN_CREATION_FUNCTION(Floor);
 DML_OP_EXTERN_CREATION_FUNCTION(Add);
 DML_OP_EXTERN_CREATION_FUNCTION(Mul);
 DML_OP_EXTERN_CREATION_FUNCTION(Div);
@@ -79,7 +80,7 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
         {REG_INFO_VER(Unsqueeze, 11)},
         {REG_INFO_VER(Unsqueeze, 13)},*/
         // Elementwise
-        //{REG_INFO(Floor)},
+        {REG_INFO(Floor)},
         {REG_INFO(Add)},
         {REG_INFO(Mul)},
         {REG_INFO(Div)},

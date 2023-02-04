@@ -93,6 +93,27 @@ namespace ODI
 //     opDesc.FusedActivation = fusedActivation;
 // }
 
+ template <DML_OPERATOR_TYPE TOperatorType, typename TOperatorDesc>
+ class DmlOperatorElementwiseUnary
+ {
+ public:
+     DmlOperatorElementwiseUnary(std::map<std::string, dml::Expression>& expressionMap, std::map<std::string, ONNX_PARSER::InitializerTensorInfo>& initializerMap,
+         ONNX_PARSER::Op& node, dml::Graph& graph, unsigned int opsetVersion)
+     {
+         if (node.inputNames.size() != 1)
+             throw std::exception("Unary operator must have 1 parameter!");
+
+         m_input0 = expressionMap[node.inputNames[0]];
+
+         CheckReference(initializerMap, node.inputNames[0]);
+     }    
+     dml::Expression Create() {
+         return dml::detail::ElementWiseUnary<TOperatorType, TOperatorDesc>(m_input0);
+     }
+ private:
+     dml::Expression m_input0;
+ };
+
 template <DML_OPERATOR_TYPE TOperatorType, typename TOperatorDesc>
 class DmlOperatorElementwiseBinary 
 {
@@ -109,6 +130,11 @@ public:
         CheckReference(initializerMap, node.inputNames[0]);
         CheckReference(initializerMap, node.inputNames[1]);
 
+
+        if (m_input0.GetOutputDesc().sizes.size() != m_input1.GetOutputDesc().sizes.size()) {
+            assert(false);
+        }
+
         // TODO: ONLY ADD operator supports fused activation
         // std::optional<ActivationOperatorDesc> fusedActivation = FusionHelpers::TryGetFusedActivationDesc(kernelInfo);
         // DML_OPERATOR_DESC fusedActivationDmlDesc = fusedActivation ? fusedActivation->GetDmlDesc() : DML_OPERATOR_DESC();
@@ -123,7 +149,12 @@ public:
 
     }
     dml::Expression Create(){
-        return dml::detail::ElementWiseBinary<TOperatorType, TOperatorDesc>(m_input0, m_input1);
+        dml::Expression casted_input1 = m_input1;
+        auto dataType0 = m_input0.GetOutputDesc().dataType;
+        auto dataType1 = m_input1.GetOutputDesc().dataType;
+        if (dataType0 != dataType1)
+            casted_input1 = dml::Reinterpret(m_input1, dataType0);
+        return dml::detail::ElementWiseBinary<TOperatorType, TOperatorDesc>(m_input0, casted_input1);
     }
 private:
     dml::Expression m_input0;
@@ -711,7 +742,7 @@ private:
 // DML_OP_DEFINE_CREATION_FUNCTION(Log,              DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_LOG_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Abs,              DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_ABS_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Ceil,             DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_CEIL_OPERATOR_DESC>);
-// DML_OP_DEFINE_CREATION_FUNCTION(Floor,            DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_FLOOR_OPERATOR_DESC>);
+ DML_OP_DEFINE_CREATION_FUNCTION(Floor,            DmlOperatorElementwiseUnary<DML_OPERATOR_ELEMENT_WISE_FLOOR, DML_ELEMENT_WISE_FLOOR_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Not,              DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_LOGICAL_NOT_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(Sign,             DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_SIGN_OPERATOR_DESC>);
 // DML_OP_DEFINE_CREATION_FUNCTION(IsNaN,            DmlOperatorElementwiseUnary<DML_ELEMENT_WISE_IS_NAN_OPERATOR_DESC>);

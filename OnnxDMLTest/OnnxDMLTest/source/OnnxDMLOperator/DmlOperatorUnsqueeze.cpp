@@ -19,30 +19,39 @@ public:
         m_input = expressionMap[inputName];
 
         dml::TensorDimensions inputShape = m_input.GetOutputDesc().sizes;
-        // get unsqueeze axis from attribute 
-        std::vector<int> axis;
-        {
-            //std::vector<char> temp;
-            ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS);
-            if (!attriWrapper.isValid())
-                assert(false);
-            axis.resize(attriWrapper.getValue().size() / 4);
-            memcpy(axis.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
-        }
-        int AxisSize = axis.size();
 
-        axis.push_back(AxisSize + inputShape.size());
-                    
-        int index = 0;
-        for (int i = 0; i < axis[0]; i++){
-            outputSizes.push_back(inputShape[index++]);
-        }
-        for (int i = 0; i < AxisSize; i++){
+        // TODO: handling scalar type 
+        if (m_input.GetOutputDesc().sizes.size() == 1 && m_input.GetOutputDesc().sizes[0] == 1) {
             outputSizes.push_back(1);
-            for (int j = axis[i] + 1; j < axis[i+1]; j++){
+        }
+        else {
+            // get unsqueeze axis from attribute 
+            std::vector<int> axis;
+            {
+                //std::vector<char> temp;
+                ONNX_PARSER::AttributeValWrapper attriWrapper = node.GetAttribute("axes", ONNX_PARSER::AttributeType::INTS);
+                if (!attriWrapper.isValid())
+                    assert(false);
+                axis.resize(attriWrapper.getValue().size() / 4);
+                memcpy(axis.data(), attriWrapper.getValue().data(), attriWrapper.getValue().size());
+            }
+            int AxisSize = axis.size();
+
+            axis.push_back(AxisSize + inputShape.size());
+
+            int index = 0;
+            for (int i = 0; i < axis[0]; i++) {
                 outputSizes.push_back(inputShape[index++]);
             }
+            for (int i = 0; i < AxisSize; i++) {
+                outputSizes.push_back(1);
+                for (int j = axis[i] + 1; j < axis[i + 1]; j++) {
+                    outputSizes.push_back(inputShape[index++]);
+                }
+            }
         }
+
+        
         /*if (axis[AxisSize - 1] == AxisSize + inputShape.size() - 1 && AxisSize > 1)
             outputSizes.push_back(1);*/
 
