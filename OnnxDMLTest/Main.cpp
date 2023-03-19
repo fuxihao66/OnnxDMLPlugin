@@ -289,37 +289,31 @@ void UnitTest(const std::wstring& onnxFile, const std::string& modelName,
     Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
     Microsoft::WRL::ComPtr<ID3D12Resource> readbackOutput;
 
-    //std::vector<uint16_t> inputData;
-
-    /*inputData.push_back(Float16Compressor::compress(1.0f));
-    inputData.push_back(Float16Compressor::compress(1.2f));
-    inputData.push_back(Float16Compressor::compress(2.3f));
-    inputData.push_back(Float16Compressor::compress(3.4f));
-    inputData.push_back(Float16Compressor::compress(4.5f));
-    inputData.push_back(Float16Compressor::compress(5.7f));*/
-
-    //auto inputSize = 6 * sizeof(uint16_t);
-    //auto outputSize = 8 * sizeof(uint16_t);
-
     context.Prepare(); // reset command list
 
     //context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
-    context.CreateBufferFromDataSubresource(modelInput, modelInputUpload, inputData, inputSize); // make sure model input is on default heap
-    context.CreateBufferFromData(modelOutput, std::nullopt, outputSize);
-    context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true);
+    context.CreateBufferFromDataSubresource(modelInput, modelInputUpload, inputData, inputSize, L"modelInput"); // make sure model input is on default heap
+    context.CreateBufferFromData(modelOutput, std::nullopt, outputSize, false, L"modelOutput");
+    context.CreateBufferFromData(readbackOutput, std::nullopt, outputSize, true, L"readback");
     //std::vector<uint16_t> cpuImageData;
 
     context.ParseUploadModelData(onnxFile, modelName);
-    context.ForceCPUSync();
-    context.Prepare();
+    /*context.ForceCPUSync();
+    context.Prepare();*/
 
     context.InitializeNewModel(modelName);
     //context.ForceCPUSync();
-    context.Prepare();
+    //context.Prepare();
 
+    //clock_t time1 = clock();
     context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input1", modelInput.Get()} }, modelOutput.Get(), modelName);
     context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
     context.ForceCPUSync();
+    //clock_t time2 = clock();
+
+    /*double t = ((double)(time2 - time1)) / CLOCKS_PER_SEC;
+    std::cout << "running time is " << t << "s" << std::endl;*/
+
 
     context.CPUReadBack(readbackOutput.Get(), cpuImageData, outputSize);
     // output should be [0.4f, 0.2f, 0.4f, 0.1f, 0.3f]

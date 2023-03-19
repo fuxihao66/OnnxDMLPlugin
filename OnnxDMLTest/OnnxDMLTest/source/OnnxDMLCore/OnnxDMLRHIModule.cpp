@@ -260,7 +260,7 @@ namespace ODI {
         unsigned int opsetVersion;
 
         {
-            ONNX_PARSER::OnnxParser* parser = new ONNX_PARSER::OnnxParser(path_to_onnx);
+            ONNX_PARSER::OnnxParser* parser = new ONNX_PARSER::OnnxParser(path_to_onnx.c_str());
             graphInitializers = parser->GetGraphInitializers(); // error
             outputMap = parser->GetOutputs();
             inputMap = parser->GetInputs();
@@ -446,6 +446,7 @@ namespace ODI {
                 nullptr,
                 IID_PPV_ARGS(currOnnxInfo.modelOperatorWeights.ReleaseAndGetAddressOf()));
 
+            currOnnxInfo.modelOperatorWeights->SetName(L"weights");
 
             D3D12_SUBRESOURCE_DATA weightsData = {};
             weightsData.pData = dmlWeights.data();
@@ -473,6 +474,18 @@ namespace ODI {
             currOnnxInfo.modelOperatorWeights->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin));
             memcpy(pDataBegin, dmlWeights.data(), dmlWeights.size());
             currOnnxInfo.modelOperatorWeights->Unmap(0, nullptr);*/
+
+            {
+                D3D12_RESOURCE_BARRIER weightsBufferResourceBarrier
+                {
+                    CD3DX12_RESOURCE_BARRIER::Transition(
+                        currOnnxInfo.modelOperatorWeights.Get(),
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+                        )
+                };
+                m_commandList->ResourceBarrier(1, &weightsBufferResourceBarrier);
+            }
         }
     }
     void D3D12RHIContext::InitializeNewModel(const std::string& modelName){
@@ -504,7 +517,7 @@ namespace ODI {
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
                 D3D12_HEAP_FLAG_NONE,
                 &resourceDesc,
-                D3D12_RESOURCE_STATE_COMMON,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 nullptr,
                 IID_PPV_ARGS(&currOnnxInfo.modelPersistentResource));
         }
@@ -520,7 +533,7 @@ namespace ODI {
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
                 D3D12_HEAP_FLAG_NONE,
                 &resourceDesc,
-                D3D12_RESOURCE_STATE_COMMON,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 nullptr,
                 IID_PPV_ARGS(&currOnnxInfo.modelTemporaryResource));
         }
@@ -537,7 +550,7 @@ namespace ODI {
                 &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
                 D3D12_HEAP_FLAG_NONE,
                 &resourceDesc,
-                D3D12_RESOURCE_STATE_COMMON,
+                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 nullptr,
                 IID_PPV_ARGS(&initTemporaryResource));
         }
@@ -596,23 +609,34 @@ namespace ODI {
         // Record the initialization
         m_dmlCommandRecorder->RecordDispatch(m_commandList.Get(), currOnnxInfo.dmlOpInitializer.Get(), initBindingTable.Get());
 
-        ForceCPUSync();
+        if (initTemporaryResource)
+            m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(initTemporaryResource.Get()));
+        if (currOnnxInfo.modelPersistentResource)
+            m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(currOnnxInfo.modelPersistentResource.Get()));
+        
 
         tableDesc.Dispatchable = currOnnxInfo.dmlGraph.Get();
         tableDesc.SizeInDescriptors = executeBindingProps.RequiredDescriptorCount;
         m_dmlDevice->CreateBindingTable(&tableDesc, IID_PPV_ARGS(&currOnnxInfo.dmlBindingTable));
+
+
+        ForceCPUSync();  // necessary
+        Prepare();
+
 
         if (currOnnxInfo.modelPersistentResource)
         {
             DML_BUFFER_BINDING binding = { currOnnxInfo.modelPersistentResource.Get(), 0, currOnnxInfo.modelPersistentResource->GetDesc().Width };
             currOnnxInfo.dmlBindingTable->BindPersistentResource(&DML_BINDING_DESC{ DML_BINDING_TYPE_BUFFER, &binding });
         }
-
+        
         if (currOnnxInfo.modelTemporaryResource)
         {
             DML_BUFFER_BINDING binding = { currOnnxInfo.modelTemporaryResource.Get(), 0, currOnnxInfo.modelTemporaryResource->GetDesc().Width };
             currOnnxInfo.dmlBindingTable->BindTemporaryResource(&DML_BINDING_DESC{ DML_BINDING_TYPE_BUFFER, &binding });
         }
+
+        
     }
 
     
@@ -622,6 +646,8 @@ namespace ODI {
     }*/
 
     void D3D12RHIContext::RunDMLInfer(const std::map<std::string, ID3D12Resource*> modelInputs, ID3D12Resource* modelOutput, const std::string& modelName) {
+        clock_t time1 = clock();
+
         ID3D12DescriptorHeap* pHeaps[] = { m_dmlDescriptorHeap->Heap() };
         m_commandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
         
@@ -648,6 +674,10 @@ namespace ODI {
         DML_BUFFER_BINDING outputBinding = { modelOutput, 0, modelOutput->GetDesc().Width }; // TODO: buffer size might be larger than tensor size (because buffer is 16 byte aligned)
         dmlBindingTable->BindOutputs(1, &DML_BINDING_DESC{ DML_BINDING_TYPE_BUFFER, &outputBinding });
 
+        clock_t time2 = clock();
+
+        double t = ((double)(time2 - time1)) / CLOCKS_PER_SEC;
+        std::cout << "cpu cost is " << t << "s" << std::endl;
         m_dmlCommandRecorder->RecordDispatch(m_commandList.Get(), dmlGraph.Get(), dmlBindingTable.Get());
 
     }
@@ -675,7 +705,7 @@ namespace ODI {
             }
         }
     }
-    void D3D12RHIContext::CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte) {
+    void D3D12RHIContext::CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte, const std::wstring& resourceName) {
         CD3DX12_RANGE readRange(0, 0);
 
 
@@ -689,6 +719,7 @@ namespace ODI {
             nullptr,
             IID_PPV_ARGS(resourcePointer.ReleaseAndGetAddressOf()));
 
+        resourcePointer->SetName(resourceName.c_str());
 
         D3D12_SUBRESOURCE_DATA weightsData = {};
         weightsData.pData = data.data();
@@ -712,9 +743,20 @@ namespace ODI {
         // Submit resource copy to command list
         UpdateSubresources(m_commandList.Get(), resourcePointer.Get(), uploadResourcePointer.Get(), 0, 0, 1, &weightsData);
 
+        {
+            D3D12_RESOURCE_BARRIER inputBufferResourceBarrier
+            {
+                CD3DX12_RESOURCE_BARRIER::Transition(
+                    resourcePointer.Get(),
+                    D3D12_RESOURCE_STATE_COPY_DEST,
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+                    )
+            };
+            m_commandList->ResourceBarrier(1, &inputBufferResourceBarrier);
+        }
     }
 
-    void D3D12RHIContext::CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadBack) {
+    void D3D12RHIContext::CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadBack, const std::wstring& resourceName) {
 
 
         D3D12_RESOURCE_FLAGS resourceFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -743,6 +785,8 @@ namespace ODI {
             resourceState,
             nullptr,
             IID_PPV_ARGS(resourcePointer.ReleaseAndGetAddressOf()));
+
+        resourcePointer->SetName(resourceName.c_str());
 
         if (data != std::nullopt) {
             UINT8* pDataBegin;

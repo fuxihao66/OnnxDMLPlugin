@@ -120,8 +120,8 @@ namespace ODI{
         void CreateDMLResources();
         //void InitializeDMLResource();
     public:
-        void CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte);
-        void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>&, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false); // only used for debug
+        void CreateBufferFromDataSubresource(Microsoft::WRL::ComPtr<ID3D12Resource>& resourcePointer, Microsoft::WRL::ComPtr<ID3D12Resource>& uploadResourcePointer, const std::vector<uint16_t>& data, unsigned int bufferSizeInByte, const std::wstring& resourceName = L"");
+        void CreateBufferFromData(Microsoft::WRL::ComPtr<ID3D12Resource>&, const std::optional<std::vector<uint16_t>> data, unsigned int bufferSizeInByte, bool needReadback = false, const std::wstring& resourceName = L""); // only used for debug
         void ForceCPUSync(); // only used for debug
         void CPUReadBack(ID3D12Resource* resourcePointer, std::vector<uint16_t>& outputData, unsigned int outputSizeInByte);
         void CopyForReadBack(ID3D12Resource* readbackInput, ID3D12Resource* readbackOutput);
