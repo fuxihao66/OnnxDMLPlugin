@@ -22,6 +22,10 @@ namespace ODI{
 
 // DML_OP_EXTERN_CREATION_FUNCTION(Copy); // for Unsqueeze
 DML_OP_EXTERN_CREATION_FUNCTION(Conv);
+DML_OP_EXTERN_CREATION_FUNCTION(DmlFusedConv);
+//DML_OP_EXTERN_CREATION_FUNCTION(Conv_Relu);
+DML_OP_EXTERN_CREATION_FUNCTION(BatchNormalization);
+DML_OP_EXTERN_CREATION_FUNCTION(DmlFusedBatchNormalization);
 DML_OP_EXTERN_CREATION_FUNCTION(InstanceNormalization);
 DML_OP_EXTERN_CREATION_FUNCTION(Relu);
 DML_OP_EXTERN_CREATION_FUNCTION(Gather);
@@ -47,7 +51,8 @@ DML_OP_EXTERN_CREATION_FUNCTION(Cast);
 //DML_OP_EXTERN_CREATION_FUNCTION(Floor);
 DML_OP_EXTERN_CREATION_FUNCTION(Constant); // not implemented in ORT
 // DML_OP_EXTERN_CREATION_FUNCTION(Shape);    // not implemented in ORT, use constant to implement shape
-DML_OP_EXTERN_CREATION_FUNCTION(Unsqueeze);  
+DML_OP_EXTERN_CREATION_FUNCTION(Unsqueeze);
+DML_OP_EXTERN_CREATION_FUNCTION(Reshape);
 // or combine operator?
 
 
@@ -57,6 +62,9 @@ using CreateFn = dml::Expression(CALLBACK *)(std::map<std::string, dml::Expressi
 static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
     {
         {REG_INFO(Conv)},
+        {REG_INFO(DmlFusedConv)},
+        {REG_INFO(BatchNormalization)},
+        {REG_INFO(DmlFusedBatchNormalization)},
         {REG_INFO(InstanceNormalization)},
         // Data Reorganization Layers
         {REG_INFO(Concat)}, // Adds negative axis.
@@ -76,6 +84,7 @@ static std::unordered_map<std::string, CreateFn> g_operatorRegistrationMap =
         // Data reorganization that merely changes the dimensions while keeping the data identical.
         // {REG_INFO_COPY(Unsqueeze, )}, // used by ORT
         {REG_INFO(Unsqueeze)},
+        {REG_INFO(Reshape)},
         /*{REG_INFO_VER(Unsqueeze, 1)},
         {REG_INFO_VER(Unsqueeze, 11)},
         {REG_INFO_VER(Unsqueeze, 13)},*/

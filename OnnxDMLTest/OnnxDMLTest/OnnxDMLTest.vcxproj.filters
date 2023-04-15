@@ -60,6 +60,9 @@
     <ClCompile Include="source\OnnxDMLOperator\DmlOperatorUnsqueeze.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorBatchNormalization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

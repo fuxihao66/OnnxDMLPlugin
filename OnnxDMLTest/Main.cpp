@@ -922,6 +922,36 @@ void FinalTest() {
     SaveImageToFile(jpgOutputData, "FinalTestOutput.png", width, height);
 }
 
+void ExtraNetTest() {
+    
+    ODI::D3D12RHIContext context;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelInput;
+    Microsoft::WRL::ComPtr<ID3D12Resource> modelOutput;
+
+    context.Prepare(); // reset command list
+
+    //context.CreateBufferFromData(modelInput, std::optional<std::vector<uint16_t>>{inputData}, inputSize); // buffer for inference
+    //context.CreateBufferFromDataSubresource(modelInput, modelInputUpload, inputData, inputSize, L"modelInput"); // make sure model input is on default heap
+    context.CreateBufferFromData(modelInput, std::nullopt, 1280 * 720 * 21 * sizeof(uint16_t), false, L"modelInputput");
+    context.CreateBufferFromData(modelOutput, std::nullopt, 1280 * 720 * 3 * sizeof(uint16_t), false, L"modelOutput");
+    //std::vector<uint16_t> cpuImageData;
+
+    context.ParseUploadModelData(L"D:/optimized_model_opset9_fp32.onnx", "ExtraNetTest");
+    /*context.ForceCPUSync();
+    context.Prepare();*/
+
+    context.InitializeNewModel("ExtraNetTest");
+    //context.ForceCPUSync();
+    //context.Prepare();
+
+    //clock_t time1 = clock();
+    context.RunDMLInfer(std::map<std::string, ID3D12Resource*>{ {"input_buffer", modelInput.Get()} }, modelOutput.Get(), "ExtraNetTest");
+    //context.CopyForReadBack(modelOutput.Get(), readbackOutput.Get());
+    context.ForceCPUSync();
+    
+}
+
 int main() {
     //testReadBack();
     //testModel();
@@ -950,7 +980,9 @@ int main() {
     //PadTest1();
     //PadTest2();
 
-    FinalTest();
+    //FinalTest();
+
+    ExtraNetTest();
 
     return 0;
 }

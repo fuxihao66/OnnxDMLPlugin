@@ -24,6 +24,7 @@
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLOperatorMapping.cpp" />
     <ClCompile Include="source\OnnxDMLCore\OnnxDMLRHIModule.cpp" />
     <ClCompile Include="source\OnnxDMLOperator\DmlOperatorActivation.cpp" />
+    <ClCompile Include="source\OnnxDMLOperator\DmlOperatorBatchNormalization.cpp" />
     <ClCompile Include="source\OnnxDMLOperator\DmlOperatorCast.cpp" />
     <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConcat.cpp" />
     <ClCompile Include="source\OnnxDMLOperator\DmlOperatorConstant.cpp" />
